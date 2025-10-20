@@ -103,7 +103,7 @@ echo ""
 
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
-        cp .env.example .env
+        cp env.example.txt .env
         print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
         echo ""
         echo "  Editiere .env:"
@@ -113,8 +113,8 @@ if [ ! -f .env ]; then
         echo "  - KRAKEN_API_KEY"
         echo "  - KRAKEN_API_SECRET"
         echo ""
-    elif [ -f "$SCRIPT_DIR/.env.example" ]; then
-        cp "$SCRIPT_DIR/.env.example" .env
+    elif [ -f "$SCRIPT_DIR/env.example.txt" ]; then
+        cp "$SCRIPT_DIR/env.example.txt" .env
         print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
         echo ""
         echo "  Editiere .env:"

@@ -192,7 +192,7 @@ fi
 echo "Schritt 4: Baue Docker Image..."
 echo ""
 
-sudo docker-compose build
+sudo docker-compose build --no-cache
 
 print_success "Docker Image gebaut"
 echo ""

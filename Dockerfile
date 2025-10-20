@@ -1,6 +1,6 @@
 # Dockerfile für Advanced AI Trading Bot
 # pandas-ta 0.3.14b0 supports Python < 3.11, so we pin to 3.10 here.
-FROM python:3.10
+FROM python:3.13
 
 # Metadata
 LABEL maintainer="Trading Bot Team"

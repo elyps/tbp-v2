@@ -20,6 +20,7 @@ NC='\033[0m' # No Color
 # Variablen
 INSTALL_DIR="/opt/trading-bot/tbp-v2"
 CURRENT_USER=$(whoami)
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Funktionen
 print_success() {
@@ -83,6 +84,7 @@ echo "Schritt 2: Erstelle Verzeichnisse..."
 echo ""
 
 sudo mkdir -p $INSTALL_DIR
+sudo chown -R $CURRENT_USER:$CURRENT_USER $INSTALL_DIR
 cd $INSTALL_DIR
 
 # Persistente Daten-Verzeichnisse
@@ -102,6 +104,17 @@ echo ""
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
         cp .env.example .env
+        print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
+        echo ""
+        echo "  Editiere .env:"
+        echo "  nano $INSTALL_DIR/.env"
+        echo ""
+        echo "  Mindestens erforderlich:"
+        echo "  - KRAKEN_API_KEY"
+        echo "  - KRAKEN_API_SECRET"
+        echo ""
+    elif [ -f "$SCRIPT_DIR/.env.example" ]; then
+        cp "$SCRIPT_DIR/.env.example" .env
         print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
         echo ""
         echo "  Editiere .env:"

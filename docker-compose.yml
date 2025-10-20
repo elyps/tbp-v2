@@ -52,6 +52,9 @@ services:
       # Portfolio Status
       - ./portfolio:/app/portfolio
 
+      # Datenbank
+      - ./data/trading_bot.db:/app/trading_bot.db
+
     networks:
       - trading-network
 

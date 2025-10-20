@@ -458,6 +458,49 @@ class TradingBot:
             except Exception as e:
                 logger.error(f"Fehler bei der Orderausführung: {e}", exc_info=True)
 
+    def _check_position_exits(self, symbol: str, current_price: float) -> List[Dict]:
+        """
+        Prüft, ob für eine offene Position Exit-Bedingungen erfüllt sind.
+
+        Args:
+            symbol: Das zu prüfende Handelssymbol.
+            current_price: Der aktuelle Marktpreis.
+
+        Returns:
+            Eine Liste von Exit-Signalen (Verkaufssignale).
+        """
+        exit_signals = []
+        position = self.portfolio['positions'].get(symbol)
+
+        if not position:
+            return exit_signals
+
+        # Finde den ursprünglichen Trade, um SL/TP zu bekommen
+        # Dies ist eine Vereinfachung; in der Praxis würde man die Order-ID speichern
+        original_trade = None
+        for trade in reversed(self.portfolio['trades']):
+            if trade['symbol'] == symbol and trade['side'] == 'buy' and trade['status'] == 'open':
+                original_trade = trade
+                break
+
+        if not original_trade:
+            return exit_signals
+
+        stop_loss = original_trade.get('stop_loss')
+        take_profit = original_trade.get('take_profit')
+
+        # Stop-Loss-Prüfung
+        if stop_loss and current_price <= stop_loss:
+            logger.info(f"🚨 STOP-LOSS ausgelöst für {symbol} bei {current_price:.2f} (Limit: {stop_loss:.2f})")
+            exit_signals.append(self.strategy_manager.create_signal(symbol, 'sell', 1.0, 'stop_loss', f'Stop-Loss bei {stop_loss:.2f} erreicht'))
+
+        # Take-Profit-Prüfung
+        elif take_profit and current_price >= take_profit:
+            logger.info(f"✅ TAKE-PROFIT ausgelöst für {symbol} bei {current_price:.2f} (Limit: {take_profit:.2f})")
+            exit_signals.append(self.strategy_manager.create_signal(symbol, 'sell', 1.0, 'take_profit', f'Take-Profit bei {take_profit:.2f} erreicht'))
+
+        return exit_signals
+
     def _record_trade(self, decision: Dict, order: Dict, market_data: pd.DataFrame = None):
         """Speichert Trade-Informationen, aktualisiert Portfolio und Logging."""
         symbol = order.get('symbol')

@@ -80,11 +80,24 @@ echo ""
 # Schritt 2: Verzeichnisse erstellen
 # =============================================================================
 
-echo "Schritt 2: Erstelle Verzeichnisse..."
+echo "Schritt 2: Erstelle Verzeichnisse und synchronisiere Dateien..."
 echo ""
 
 sudo mkdir -p $INSTALL_DIR
 sudo chown -R $CURRENT_USER:$CURRENT_USER $INSTALL_DIR
+
+echo "Synchronisiere Projektdateien..."
+if command -v rsync &> /dev/null; then
+    rsync -a --delete \
+        --exclude '.git' \
+        --exclude '.env' \
+        --exclude '__pycache__' \
+        "$SCRIPT_DIR/" "$INSTALL_DIR/"
+else
+    tar --exclude='.git' --exclude='.env' --exclude='__pycache__' \
+        -C "$SCRIPT_DIR" -cf - . | tar -C "$INSTALL_DIR" -xf -
+fi
+
 cd $INSTALL_DIR
 
 # Persistente Daten-Verzeichnisse

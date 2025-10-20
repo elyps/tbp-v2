@@ -1,0 +1,287 @@
+[
+  {
+    "source": "CoinGecko Trending",
+    "title": "Aster is trending (Rank #N/A)",
+    "body": "Aster (ASTER) - Score: 0",
+    "url": "https://www.coingecko.com/en/coins/aster-2",
+    "published_at": "2025-10-19T21:53:47.275335",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/69040/large/_ASTER.png?1757326782",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Enzyme is trending (Rank #N/A)",
+    "body": "Enzyme (MLN) - Score: 1",
+    "url": "https://www.coingecko.com/en/coins/melon",
+    "published_at": "2025-10-19T21:53:47.275366",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/605/large/Enzyme_LinkedIn_Profile_Picture.png?1747249623",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Zcash is trending (Rank #N/A)",
+    "body": "Zcash (ZEC) - Score: 2",
+    "url": "https://www.coingecko.com/en/coins/zcash",
+    "published_at": "2025-10-19T21:53:47.275378",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/486/large/circle-zcash-color.png?1696501740",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Bitcoin is trending (Rank #N/A)",
+    "body": "Bitcoin (BTC) - Score: 3",
+    "url": "https://www.coingecko.com/en/coins/bitcoin",
+    "published_at": "2025-10-19T21:53:47.275388",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png?1696501400",
+    "sentiment": {
+      "score": -0.15000000000000002,
+      "label": "negative",
+      "confidence": 0.15000000000000002,
+      "subjectivity": 0.95,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Bittensor is trending (Rank #N/A)",
+    "body": "Bittensor (TAO) - Score: 4",
+    "url": "https://www.coingecko.com/en/coins/bittensor",
+    "published_at": "2025-10-19T21:53:47.275399",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/28452/large/ARUsPeNQ_400x400.jpeg?1696527447",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Artificial Superintelligence Alliance is trending (Rank #N/A)",
+    "body": "Artificial Superintelligence Alliance (FET) - Score: 5",
+    "url": "https://www.coingecko.com/en/coins/fetch-ai",
+    "published_at": "2025-10-19T21:53:47.275409",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/5681/large/ASI.png?1719827289",
+    "sentiment": {
+      "score": -0.6666666666666666,
+      "label": "negative",
+      "confidence": 0.6666666666666666,
+      "subjectivity": 0.9666666666666667,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Synthetix is trending (Rank #N/A)",
+    "body": "Synthetix (SNX) - Score: 6",
+    "url": "https://www.coingecko.com/en/coins/havven",
+    "published_at": "2025-10-19T21:53:47.275419",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/3406/large/SNX.png?1696504103",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "ChainOpera AI is trending (Rank #N/A)",
+    "body": "ChainOpera AI (COAI) - Score: 7",
+    "url": "https://www.coingecko.com/en/coins/chainopera-ai",
+    "published_at": "2025-10-19T21:53:47.275428",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/69447/large/coai.png?1758625501",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Pudgy Penguins is trending (Rank #N/A)",
+    "body": "Pudgy Penguins (PENGU) - Score: 8",
+    "url": "https://www.coingecko.com/en/coins/pudgy-penguins",
+    "published_at": "2025-10-19T21:53:47.275438",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/52622/large/PUDGY_PENGUINS_PENGU_PFP.png?1733809110",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "STBL is trending (Rank #N/A)",
+    "body": "STBL (STBL) - Score: 9",
+    "url": "https://www.coingecko.com/en/coins/stbl",
+    "published_at": "2025-10-19T21:53:47.275448",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/69277/large/stbl.png?1758022676",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Ethereum is trending (Rank #N/A)",
+    "body": "Ethereum (ETH) - Score: 10",
+    "url": "https://www.coingecko.com/en/coins/ethereum",
+    "published_at": "2025-10-19T21:53:47.275475",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/279/large/ethereum.png?1696501628",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Kaspa is trending (Rank #N/A)",
+    "body": "Kaspa (KAS) - Score: 11",
+    "url": "https://www.coingecko.com/en/coins/kaspa",
+    "published_at": "2025-10-19T21:53:47.275496",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/25751/large/kaspa-icon-exchanges.png?1696524837",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Linea is trending (Rank #N/A)",
+    "body": "Linea (LINEA) - Score: 12",
+    "url": "https://www.coingecko.com/en/coins/linea",
+    "published_at": "2025-10-19T21:53:47.275515",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/68507/large/linea-logo.jpeg?1756025484",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "Hyperliquid is trending (Rank #N/A)",
+    "body": "Hyperliquid (HYPE) - Score: 13",
+    "url": "https://www.coingecko.com/en/coins/hyperliquid",
+    "published_at": "2025-10-19T21:53:47.275527",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/50882/large/hyperliquid.jpg?1729431300",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  },
+  {
+    "source": "CoinGecko Trending",
+    "title": "MetaDAO is trending (Rank #N/A)",
+    "body": "MetaDAO (META) - Score: 14",
+    "url": "https://www.coingecko.com/en/coins/meta-2-2",
+    "published_at": "2025-10-19T21:53:47.275536",
+    "categories": [
+      "trending",
+      "crypto"
+    ],
+    "image_url": "https://coin-images.coingecko.com/coins/images/68320/large/META.png?1755335883",
+    "sentiment": {
+      "score": -0.8,
+      "label": "negative",
+      "confidence": 0.8,
+      "subjectivity": 0.9,
+      "method": "textblob"
+    }
+  }
+]

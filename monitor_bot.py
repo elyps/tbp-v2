@@ -1,43 +1,77 @@
 """
 Live-Monitoring Dashboard für den Trading Bot
 Zeigt Portfolio, Performance und aktuelle Signale in Echtzeit
+Nutzt SQLite Datenbank für alle Daten
 """
 
 import os
+import sys
 import time
 import json
 from datetime import datetime
 from typing import Dict
+from pathlib import Path
+
+# Add trading_bot to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from trading_bot.database import get_database
 
 def clear_screen():
     """Löscht den Bildschirm."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def load_portfolio() -> Dict:
-    """Lädt das aktuelle Portfolio aus der Datei."""
-    portfolio_file = 'portfolio_state.json'
+def load_portfolio(db) -> Dict:
+    """Lädt das aktuelle Portfolio aus der SQLite Datenbank."""
+    # Portfolio aus DB
+    portfolio = db.get_portfolio()
     
-    if os.path.exists(portfolio_file):
-        try:
-            with open(portfolio_file, 'r') as f:
-                return json.load(f)
-        except:
-            pass
+    if not portfolio:
+        # Fallback: Standard-Portfolio
+        return {
+            'balance': 10000.0,
+            'equity': 10000.0,
+            'positions': {},
+            'trades': [],
+            'performance': {
+                'total_trades': 0,
+                'winning_trades': 0,
+                'losing_trades': 0,
+                'win_rate': 0.0,
+                'profit_factor': 0.0,
+                'max_drawdown': 0.0,
+            }
+        }
     
-    # Fallback: Standard-Portfolio
+    # Positionen aus DB
+    positions_list = db.get_all_positions()
+    positions = {pos['symbol']: pos for pos in positions_list}
+    
+    # Trades aus DB (ALLE Trades - offen + geschlossen)
+    all_trades = db.get_trades(limit=100)
+    
+    # Stats aus DB (nur geschlossene Trades)
+    closed_stats = db.get_trade_statistics()
+    
+    # Berechne Gesamt-Trades (inkl. offene)
+    total_trades_count = len(all_trades)
+    open_trades_count = len([t for t in all_trades if t['status'] == 'open'])
+    
     return {
-        'balance': 10000.0,
-        'equity': 10000.0,
-        'positions': {},
-        'trades': [],
+        'balance': portfolio['balance'],
+        'equity': portfolio['equity'],
+        'positions': positions,
+        'trades': all_trades,
         'performance': {
-            'total_trades': 0,
-            'winning_trades': 0,
-            'losing_trades': 0,
-            'win_rate': 0.0,
+            'total_trades': total_trades_count,
+            'open_trades': open_trades_count,
+            'closed_trades': closed_stats.get('total_trades', 0),
+            'winning_trades': closed_stats.get('winning_trades', 0),
+            'losing_trades': closed_stats.get('losing_trades', 0),
+            'win_rate': closed_stats.get('win_rate', 0.0),
             'profit_factor': 0.0,
-            'max_drawdown': 0.0,
+            'max_drawdown': portfolio.get('max_drawdown', 0.0),
         }
     }
 
@@ -142,12 +176,14 @@ def print_dashboard(portfolio: Dict):
     print("├─────────────────────────────────────────────────────────────────────────────┤")
     
     total_trades = perf.get('total_trades', 0)
+    open_trades = perf.get('open_trades', 0)
+    closed_trades = perf.get('closed_trades', 0)
     winning_trades = perf.get('winning_trades', 0)
     losing_trades = perf.get('losing_trades', 0)
     win_rate = perf.get('win_rate', 0)
     max_dd = perf.get('max_drawdown', 0)
     
-    print(f"│  Gesamt Trades:     {total_trades:>8}                                          │")
+    print(f"│  Gesamt Trades:     {total_trades:>8} (Offen: {open_trades}, Geschlossen: {closed_trades}){'':>{42-len(str(total_trades))-len(str(open_trades))-len(str(closed_trades))-23}}│")
     print(f"│  Gewinn-Trades:     {winning_trades:>8}                                          │")
     print(f"│  Verlust-Trades:    {losing_trades:>8}                                          │")
     print(f"│  Win Rate:          {format_percentage(win_rate):>8}                                     │")
@@ -223,18 +259,24 @@ def main():
     """Hauptfunktion für das Live-Monitoring."""
     print("\n🚀 Starte Trading Bot Monitor...\n")
     print("Überwache Bot-Aktivitäten in Echtzeit...")
+    print("Nutzt SQLite Datenbank: trading_bot.db")
     print("(Stelle sicher, dass der Bot mit 'python main.py' läuft)\n")
+    
+    # SQLite Datenbank initialisieren
+    db = get_database('trading_bot.db')
+    print("✓ Datenbank verbunden\n")
     
     time.sleep(2)
     
     try:
         while True:
-            portfolio = load_portfolio()
+            portfolio = load_portfolio(db)
             print_dashboard(portfolio)
             time.sleep(5)  # Aktualisiere alle 5 Sekunden
             
     except KeyboardInterrupt:
         print("\n\n👋 Monitor wird beendet...\n")
+        db.close()
 
 
 if __name__ == "__main__":

@@ -361,6 +361,106 @@ class MLModel:
             logger.error(f"Fehler bei der Feature-Vorbereitung: {str(e)}")
             return None
     
+    def incremental_train(self, X: pd.DataFrame, y: pd.Series):
+        """
+        Führt inkrementelles Training mit neuen Daten durch.
+        Behält das bestehende Modell und trainiert es mit zusätzlichen Daten weiter.
+        
+        Args:
+            X: Neue Feature-DataFrame
+            y: Neue Target-Series
+        """
+        try:
+            logger.info(f"Starte inkrementelles Training mit {len(X)} neuen Samples...")
+            
+            # Wenn kein Modell existiert, normales Training
+            if not self.is_trained:
+                logger.info("Kein trainiertes Modell vorhanden - führe vollständiges Training durch")
+                self.train(X, y)
+                return
+            
+            # Skaliere neue Daten mit bestehendem Scaler
+            X_scaled = self.scaler.transform(X)
+            
+            # Für Tree-basierte Modelle (XGBoost, LightGBM) mit warm_start
+            model_type = self.settings.get('model_type', 'xgboost')
+            
+            if model_type in ['xgboost', 'lightgbm'] and hasattr(self.model, 'n_estimators'):
+                # Erhöhe Anzahl der Bäume für zusätzliches Lernen
+                current_n_estimators = self.model.n_estimators
+                additional_trees = self.settings.get('incremental_trees', 50)
+                
+                self.model.n_estimators = current_n_estimators + additional_trees
+                
+                # XGBoost unterstützt xgb_model Parameter für warm start
+                if model_type == 'xgboost' and XGBOOST_AVAILABLE:
+                    self.model.fit(X_scaled, y, xgb_model=self.model.get_booster())
+                else:
+                    # Für andere Modelle: Kombiniere mit alten Daten falls verfügbar
+                    self.model.fit(X_scaled, y)
+                
+                logger.info(f"Inkrementelles Training abgeschlossen: {current_n_estimators} -> {self.model.n_estimators} Bäume")
+            else:
+                # Fallback: Vollständiges Re-Training
+                logger.warning(f"Inkrementelles Training nicht unterstützt für {model_type}, führe Re-Training durch")
+                self.train(X, y)
+                return
+            
+            # Speichere aktualisiertes Modell
+            self._save_model()
+            
+            # Berechne neue Genauigkeit
+            accuracy = self.model.score(X_scaled, y)
+            logger.info(f"Inkrementelles Training abgeschlossen. Neue Genauigkeit auf Sample: {accuracy:.2%}")
+            
+        except Exception as e:
+            logger.error(f"Fehler beim inkrementellen Training: {str(e)}", exc_info=True)
+    
+    def evaluate_on_new_data(self, X: pd.DataFrame, y: pd.Series) -> Dict:
+        """
+        Evaluiert das Modell auf neuen Daten ohne zu trainieren.
+        
+        Args:
+            X: Feature-DataFrame
+            y: Target-Series
+            
+        Returns:
+            Dictionary mit Evaluationsmetriken
+        """
+        try:
+            if not self.is_trained:
+                logger.warning("Modell ist nicht trainiert")
+                return {}
+            
+            X_scaled = self.scaler.transform(X)
+            
+            # Predictions
+            y_pred = self.model.predict(X_scaled)
+            
+            # Accuracy
+            accuracy = self.model.score(X_scaled, y)
+            
+            # Confusion Matrix
+            from sklearn.metrics import confusion_matrix, classification_report
+            cm = confusion_matrix(y, y_pred)
+            
+            # Classification Report
+            report = classification_report(y, y_pred, output_dict=True, zero_division=0)
+            
+            result = {
+                'accuracy': accuracy,
+                'confusion_matrix': cm.tolist(),
+                'classification_report': report,
+                'sample_count': len(X)
+            }
+            
+            logger.info(f"Evaluation abgeschlossen: Accuracy={accuracy:.2%} auf {len(X)} Samples")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Fehler bei der Evaluation: {str(e)}", exc_info=True)
+            return {}
+    
     def get_feature_importance(self) -> Dict:
         """
         Gibt die Feature-Wichtigkeit zurück.

@@ -13,12 +13,16 @@ API_KEYS = {
 # Standardwerte für das Trading
 DEFAULT_SETTINGS = {
     'timeframe': '1h',  # Standard-Zeitrahmen für die Analyse (1h = aktiver, 4h = mittel, 1d = langfristig)
-    'initial_balance': 10000.0,  # Startkapital in USD
+    'initial_balance': 1000.0,  # Startkapital in EUR (1000€ für bessere Position-Größen)
     'risk_per_trade': 1.0,  # Risiko pro Trade in % des Kontoguthabens
     'max_drawdown': 20.0,  # Maximaler Drawdown in %
     'trading_fee': 0.1,  # Handelsgebühr in %
     'slippage': 0.05,  # Erwarteter Slippage in %
     'paper_trading': True,  # Paper Trading aktiviert (kein echtes Geld)
+    'use_enhanced_pipeline': True,  # Verwende neue Companion Codex Pipeline
+    'continuous_learning': True,
+    'min_samples_retrain': 100,
+    'retrain_frequency_hours': 24,
 }
 
 # Standard-Indikatoren und ihre Parameter
@@ -46,19 +50,20 @@ ML_SETTINGS = {
     'validation_split': 0.1,
 }
 
-# Risikomanagement (KONSERVATIV für konsistente Gewinne)
+# Risikomanagement (AGGRESSIV für viele Trades - Kraken Pro Abo ohne Gebühren)
 RISK_MANAGEMENT = {
-    'max_risk_per_trade': 0.008,  # 0.8% des Kapitals pro Trade (sehr konservativ)
-    'max_portfolio_risk': 0.03,  # 3% des Gesamtportfolios (streng begrenzt)
-    'max_open_positions': 1,  # NUR 1 Position gleichzeitig (maximaler Fokus)
-    'min_risk_reward_ratio': 3.0,  # Min 3:1 Risk-Reward (nur beste Setups)
-    'min_confidence': 0.75,  # 75% Mindest-Konfidenz (hochwertige Signale nur)
-    'stop_loss_pct': 0.012,  # Stop-Loss 1.2% (enger Schutz)
-    'take_profit_pct': 0.036,  # Take-Profit 3.6% (3:1 Risk-Reward)
+    'max_risk_per_trade': 0.02,  # 2% des Kapitals pro Trade (aggressive Positionsgröße)
+    'max_portfolio_risk': 0.08,  # 8% des Gesamtportfolios (mehr parallel Trading)
+    'max_open_positions': 5,  # BIS ZU 5 Positionen gleichzeitig (Multi-Markt Trading)
+    'min_risk_reward_ratio': 1.5,  # Min 1.5:1 Risk-Reward (auch kleine Gewinne mitnehmen)
+    'min_confidence': 0.65,  # 65% Mindest-Konfidenz (nur verlässliche Signale)
+    'stop_loss_pct': 0.015,  # Stop-Loss 1.5% (moderater Schutz)
+    'take_profit_pct': 0.025,  # Take-Profit 2.5% (kleinere Gewinne früher realisieren)
     'trailing_stop': True,
-    'trailing_stop_distance': 0.003,  # Trailing Stop 0.3% (eng folgen)
+    'trailing_stop_distance': 0.005,  # Trailing Stop 0.5% (folgt Gewinn)
     'partial_take_profit': True,  # Gewinne teilweise sichern
-    'partial_tp_pct': 0.02,  # Bei 2% 50% der Position schließen
+    'partial_tp_pct': 0.015,  # Bei 1.5% bereits 50% der Position schließen (schnell)
+    'min_profit_target_eur': 2.0,
 }
 
 # Strategie-Einstellungen (Kraken-optimiert)
@@ -79,7 +84,7 @@ STRATEGIES = {
         'indicators': ['atr', 'volume'],
     },
     'ml_based': {
-        'enabled': True,  # XGBoost-basierte Strategie
+        'enabled': False,  # ❌ DEAKTIVIERT: Modell muss erst trainiert werden (verhindert automatische SOL-Käufe)
         'min_confidence': 0.65,
         'timeframes': ['1h', '4h'],
     },
@@ -87,7 +92,7 @@ STRATEGIES = {
 
 # Logging-Konfiguration
 LOGGING_CONFIG = {
-    'level': 'INFO',
+    'level': 'DEBUG',
     'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     'file': 'logs/trading_bot.log'
 }

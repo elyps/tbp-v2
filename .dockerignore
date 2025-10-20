@@ -1,0 +1,60 @@
+# Git und IDE Dateien
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+
+# Python Cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Logs (werden als Volume gemountet)
+logs/
+
+# Modelle (werden als Volume gemountet)
+models/
+
+# Training Data (wird als Volume gemountet)
+training_data/
+
+# News Data (wird als Volume gemountet)
+news_data/
+
+# Portfolio (wird als Volume gemountet)
+portfolio/
+
+# Entwicklung Dateien
+.env
+.env.local
+.env.*.local
+
+# Docker Dateien (nicht in Container kopieren)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Dokumentation
+*.md
+docs/
+README*
+
+# Test Dateien
+test_*
+*_test.py
+tests/
+
+# Backup Dateien
+*.tar.gz
+backup-*
+
+# Temporäre Dateien
+*.tmp
+*.log
+.cache
+.pytest_cache

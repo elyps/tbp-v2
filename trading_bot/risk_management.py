@@ -60,26 +60,50 @@ class RiskManager:
         open_positions = portfolio.get('positions', {})
         num_open_positions = len(open_positions)
         
+        logger.debug(
+            "RiskManager.evaluate_risk -> balance=%.2f open_positions=%s current_price=%.2f",
+            self.current_balance,
+            {sym: pos.get('amount') for sym, pos in open_positions.items()},
+            current_price,
+        )
         for signal in signals:
             try:
                 action = signal.get('action')
                 symbol = signal.get('symbol')
+                logger.debug(
+                    "RiskManager Signal -> action=%s symbol=%s confidence=%.2f reason=%s", 
+                    action,
+                    symbol,
+                    signal.get('confidence', 0.0),
+                    signal.get('reason', ''),
+                )
                 
                 # Verkaufssignale: Nur wenn Position existiert
                 if action == 'sell':
                     if symbol not in open_positions:
-                        logger.debug(f"Verkaufssignal für {symbol} ignoriert: Keine offene Position")
+                        logger.debug("RiskManager: SELL verworfen, keine Position für %s", symbol)
                         continue
                 
-                # Kaufsignale: Nur wenn nicht max. Positionen erreicht
+                # Kaufsignale: Prüfe Limitierungen
                 if action == 'buy':
+                    # Prüfe ob bereits eine Position für dieses Symbol existiert
+                    if symbol in open_positions:
+                        logger.info("RiskManager: BUY verworfen, %s bereits offen", symbol)
+                        continue
+                    
+                    # Prüfe ob max. Anzahl Positionen erreicht
                     if num_open_positions >= self.max_open_positions:
-                        logger.info(f"Kaufsignal ignoriert: Maximale Anzahl offener Positionen erreicht ({num_open_positions})")
+                        logger.info(
+                            "RiskManager: BUY verworfen, max offene Positionen erreicht (%d)",
+                            num_open_positions,
+                        )
                         continue
                 
                 decision = self._evaluate_signal(signal, current_price)
                 if decision:
                     decisions.append(decision)
+                else:
+                    logger.debug("RiskManager: Signal ergab keine Entscheidung")
             except Exception as e:
                 logger.error(f"Fehler bei der Risikobewertung: {str(e)}")
         
@@ -101,12 +125,28 @@ class RiskManager:
         
         # Mindest-Konfidenz prüfen
         min_confidence = self.config.get('min_confidence', 0.6)
+        logger.debug(
+            "RiskManager._evaluate_signal -> action=%s price=%.4f confidence=%.2f min_conf=%.2f",
+            action,
+            current_price,
+            confidence,
+            min_confidence,
+        )
         if confidence < min_confidence:
-            logger.debug(f"Signal ignoriert: Konfidenz zu niedrig ({confidence:.2%})")
+            logger.debug(
+                "RiskManager: Signal verworfen (Konfidenz %.2f < Mindest %.2f)",
+                confidence,
+                min_confidence,
+            )
             return None
         
         # Stop-Loss und Take-Profit berechnen
         stop_loss, take_profit = self._calculate_risk_levels(current_price, action)
+        logger.debug(
+            "RiskManager: Levels berechnet -> stop_loss=%.4f take_profit=%.4f",
+            stop_loss,
+            take_profit,
+        )
         
         # Positionsgröße berechnen
         position_size = self._calculate_position_size(
@@ -114,9 +154,30 @@ class RiskManager:
             stop_loss, 
             confidence
         )
+        logger.debug(
+            "RiskManager: PositionSize berechnet -> size=%.6f balance=%.2f", 
+            position_size,
+            self.current_balance,
+        )
+        
+        # Erzwinge Mindestgewinn in EUR, sofern konfiguriert
+        min_profit_eur = self.config.get('min_profit_target_eur')
+        if position_size > 0 and min_profit_eur and action == 'buy':
+            min_tp_price = current_price + (min_profit_eur / position_size)
+            if min_tp_price > take_profit:
+                take_profit = min_tp_price
+                logger.debug(
+                    "RiskManager: TakeProfit angehoben auf %.4f für Mindestgewinn %.2f€ (size=%.6f)",
+                    take_profit,
+                    min_profit_eur,
+                    position_size,
+                )
         
         if position_size <= 0:
-            logger.debug("Positionsgröße zu klein, Signal ignoriert")
+            logger.debug(
+                "RiskManager: Signal verworfen (Positionsgröße %.6f <= 0)",
+                position_size,
+            )
             return None
         
         # Handelsentscheidung erstellen
@@ -134,7 +195,15 @@ class RiskManager:
             )
         }
         
-        logger.info(f"Handelsentscheidung: {decision['action']} {decision['amount']:.4f} @ {current_price:.2f}")
+        logger.info(
+            "RiskManager: Entscheidung -> action=%s amount=%.6f price=%.4f SL=%.4f TP=%.4f RR=%.2f",
+            decision['action'],
+            decision['amount'],
+            current_price,
+            stop_loss,
+            take_profit,
+            decision['risk_reward_ratio'],
+        )
         
         return decision
     

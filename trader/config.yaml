@@ -1,0 +1,37 @@
+data:
+  symbols: ["ES"]
+  bar: "1h"
+  # path: "data/market_data.csv"  # Optional: path to CSV file
+  # start: "2023-01-01"  # Optional: filter start date
+  # end: "2024-01-01"    # Optional: filter end date
+
+backtest:
+  train_days: 252
+  test_days: 63
+  step_days: 63
+  fee_bps: 0      # Keine Gebühren (Kraken Pro Abo)
+  slippage_bps: 2  # Reduziert da Pro Account
+
+signals:
+  type: "trend_meta"
+  p_up: 0.48      # AGGRESSIV: Niedrigere Confidence = mehr Signale (war 0.55)
+  p_dn: 0.48      # AGGRESSIV: Mehr Short-Signale (falls aktiviert)
+  allow_short: false
+  params: {}
+
+sizing:
+  type: "vol"
+  target_vol: 0.12  # AGGRESSIV: Höhere Volatilität = größere Positionen
+  cap: 0.05        # AGGRESSIV: Max 5% pro Position (war 3%)
+  params: {}
+
+risk:
+  max_pos_per_asset: 0.05  # AGGRESSIV: Größere Einzelpositionen erlaubt
+  max_gross: 0.8          # AGGRESSIV: Bis zu 80% Kapital einsetzen (war 60%)
+  stop_atr_mult: 1.5      # AGGRESSIV: Engere Stops = mehr Trades (war 2.0)
+  trail_atr_mult: 2.5     # AGGRESSIV: Schnelleres Profit-Taking (war 3.0)
+  day_dd_kill: 0.12       # TOLERANT: Mehr Verlust erlaubt vor Kill-Switch (war 8%)
+
+logging:
+  level: "INFO"
+  seed: 42

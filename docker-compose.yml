@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    build: .
+    container_name: kraken-trading-bot
+    restart: unless-stopped
+    environment:
+      # ============= EXCHANGE API KEYS =============
+      - KRAKEN_API_KEY=${KRAKEN_API_KEY}
+      - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
+      
+      # ============= NEWS & SENTIMENT API KEYS =============
+      - NEWSAPI_KEY=${NEWSAPI_KEY:-}
+      - CRYPTOCOMPARE_KEY=${CRYPTOCOMPARE_KEY:-}
+
+      # ============= BOT CONFIGURATION =============
+      - PAPER_TRADING=${PAPER_TRADING:-true}
+      - INITIAL_BALANCE=${INITIAL_BALANCE:-10000.0}
+      - RISK_PER_TRADE=${RISK_PER_TRADE:-1.0}
+      - MAX_POSITION_SIZE=${MAX_POSITION_SIZE:-30.0}
+      
+      # ============= ENHANCED FEATURES =============
+      - USE_ENHANCED_PIPELINE=${USE_ENHANCED_PIPELINE:-true}
+      
+      # ============= CONTINUOUS LEARNING =============
+      - CONTINUOUS_LEARNING=${CONTINUOUS_LEARNING:-true}
+      - MIN_SAMPLES_RETRAIN=${MIN_SAMPLES_RETRAIN:-100}
+      - RETRAIN_FREQUENCY_HOURS=${RETRAIN_FREQUENCY_HOURS:-24}
+
+      # ============= LOGGING =============
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # ============= TIMEZONE =============
+      - TZ=Europe/Berlin
+
+    volumes:
+      # Persistente Logs
+      - ./logs:/app/logs
+
+      # ML-Modelle (inkl. Backups)
+      - ./models:/app/models
+
+      # Continuous Learning Daten
+      - ./training_data:/app/training_data
+
+      # News-Daten (historisch)
+      - ./news_data:/app/news_data
+
+      # Portfolio Status
+      - ./portfolio:/app/portfolio
+
+    networks:
+      - trading-network
+
+    # Ressourcen Limits (Server optimiert)
+    deploy:
+      resources:
+        limits:
+          memory: 2G       # Erhöht für historisches Training
+          cpus: '1.0'      # Erhöht für ML-Training
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+    # Healthcheck für Monitoring
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0 if os.path.exists('/app/logs/trading_bot.log') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s    # Mehr Zeit für Initialisierung
+
+  # Optional: Learning Monitor (zeigt KI-Statistiken)
+  learning-monitor:
+    build: .
+    container_name: trading-bot-learning-monitor
+    restart: "no"  # Manuell starten
+    depends_on:
+      - trading-bot
+    command: ["python", "monitor_learning.py"]
+    volumes:
+      - ./logs:/app/logs:ro
+      - ./models:/app/models:ro
+      - ./training_data:/app/training_data:ro
+    networks:
+      - trading-network
+    profiles:
+      - monitoring
+
+  # Optional: Initial Training Service (einmalig ausführen)
+  training:
+    build: .
+    container_name: trading-bot-training
+    restart: "no"  # Nur manuell starten
+    command: ["python", "train_comprehensive_model.py", "--years", "15"]
+    environment:
+      - NEWSAPI_KEY=${NEWSAPI_KEY:-}
+      - CRYPTOCOMPARE_KEY=${CRYPTOCOMPARE_KEY:-}
+    volumes:
+      - ./models:/app/models
+      - ./news_data:/app/news_data
+      - ./logs:/app/logs
+    networks:
+      - trading-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G       # Mehr für Training
+          cpus: '2.0'
+    profiles:
+      - training
+
+networks:
+  trading-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local
+  models:
+    driver: local
+  training_data:
+    driver: local
+  news_data:
+    driver: local
+  portfolio:
+    driver: local

@@ -87,6 +87,14 @@ class StrategyManager:
             current = df.iloc[-1]
             prev = df.iloc[-2]
             recent = df.tail(10)
+            logger.debug(
+                "Trend-Following: price=%.2f prev_price=%.2f sma20=%.2f sma50=%.2f prev_sma20=%.2f prev_sma50=%.2f rsi=%.2f macd_hist=%.5f vol=%.2f avg_vol=%.2f",
+                current['close'], prev['close'], current.get('sma_20', float('nan')),
+                current.get('sma_50', float('nan')), prev.get('sma_20', float('nan')),
+                prev.get('sma_50', float('nan')), current.get('rsi_14', float('nan')),
+                current.get('macd_hist', float('nan')), current.get('volume', float('nan')),
+                recent['volume'].mean() if 'volume' in recent.columns else float('nan')
+            )
             
             # Prüfe ob alle benötigten Indikatoren vorhanden
             required = ['sma_20', 'sma_50', 'rsi_14', 'macd_hist', 'volume']
@@ -121,8 +129,8 @@ class StrategyManager:
                 if volume > avg_volume * 1.1:  # Erhöhtes Volumen
                     confirmations += 1
                 
-                if confirmations >= 2:  # Mindestens 2 Bestätigungen
-                    logger.info(f"Trend-Following: Bestätigter Bullish Crossover! Confirmations={confirmations}")
+                if confirmations >= 1:  # Mindestens 1 Bestätigung
+                    logger.info(f"Trend-Following: Bullisher Crossover bestätigt ({confirmations} Checks)")
                     return {
                         'action': 'buy',
                         'confidence': 0.70 + (confirmations * 0.05),
@@ -139,8 +147,8 @@ class StrategyManager:
                 if volume > avg_volume * 1.1:  # Erhöhtes Volumen
                     confirmations += 1
                 
-                if confirmations >= 2:
-                    logger.info(f"Trend-Following: Bestätigter Bearish Crossover! Confirmations={confirmations}")
+                if confirmations >= 1:
+                    logger.info(f"Trend-Following: Bearisher Crossover bestätigt ({confirmations} Checks)")
                     return {
                         'action': 'sell',
                         'confidence': 0.70 + (confirmations * 0.05),
@@ -164,6 +172,13 @@ class StrategyManager:
             current = df.iloc[-1]
             prev = df.iloc[-2]
             recent = df.tail(5)
+            logger.debug(
+                "Mean-Reversion: price=%.2f prev_price=%.2f rsi=%.2f prev_rsi=%.2f bb_lower=%.2f bb_upper=%.2f bb_mid=%.2f vol=%.2f avg_vol=%.2f",
+                current['close'], prev['close'], current.get('rsi_14', float('nan')),
+                prev.get('rsi_14', float('nan')), current.get('bb_lower', float('nan')),
+                current.get('bb_upper', float('nan')), current.get('bb_middle', float('nan')),
+                current.get('volume', float('nan')), recent['volume'].mean() if 'volume' in recent.columns else float('nan')
+            )
             
             required = ['rsi_14', 'bb_lower', 'bb_upper', 'bb_middle', 'volume']
             if not all(col in df.columns for col in required):
@@ -225,6 +240,12 @@ class StrategyManager:
             
             current = df.iloc[-1]
             recent = df.tail(20)
+            logger.debug(
+                "Breakout: price=%.2f high20=%.2f low20=%.2f volume=%.2f avg_vol=%.2f atr=%.5f avg_atr=%.5f",
+                current['close'], recent['high'].max(), recent['low'].min(),
+                current.get('volume', float('nan')), recent['volume'].mean() if 'volume' in recent.columns else float('nan'),
+                current.get('atr', float('nan')), recent['atr'].mean() if 'atr' in recent.columns else float('nan')
+            )
             
             if 'volume' not in df.columns or 'atr' not in df.columns:
                 logger.debug("Breakout: Volume oder ATR fehlt")
@@ -257,8 +278,8 @@ class StrategyManager:
                 if price > high_20 * 1.001:  # Echter Durchbruch
                     confirmations += 1
                 
-                if confirmations >= 2:  # Mind. 2 Bestätigungen
-                    logger.info(f"Breakout: Bestätigter Ausbruch! Conf={confirmations}, Vol={volume/avg_volume:.1f}x")
+                if confirmations >= 1:  # Mind. 1 Bestätigung
+                    logger.info(f"Breakout: Ausbruch erkannt! Conf={confirmations}, Vol={volume/avg_volume:.1f}x")
                     return {
                         'action': 'buy',
                         'confidence': 0.70 + (confirmations * 0.05),
@@ -276,8 +297,8 @@ class StrategyManager:
                 if price < low_20 * 0.999:
                     confirmations += 1
                 
-                if confirmations >= 2:
-                    logger.info(f"Breakout: Bestätigter Breakdown! Conf={confirmations}, Vol={volume/avg_volume:.1f}x")
+                if confirmations >= 1:
+                    logger.info(f"Breakout: Breakdown erkannt! Conf={confirmations}, Vol={volume/avg_volume:.1f}x")
                     return {
                         'action': 'sell',
                         'confidence': 0.70 + (confirmations * 0.05),

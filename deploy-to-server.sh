@@ -73,7 +73,6 @@ if ! check_command docker-compose; then
 fi
 
 echo ""
-newgrp docker
 print_success "Alle Voraussetzungen erfüllt"
 echo ""
 
@@ -117,7 +116,7 @@ echo ""
 
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
-        cp env.example.txt .env
+        cp .env.example .env
         print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
         echo ""
         echo "  Editiere .env:"
@@ -127,8 +126,8 @@ if [ ! -f .env ]; then
         echo "  - KRAKEN_API_KEY"
         echo "  - KRAKEN_API_SECRET"
         echo ""
-    elif [ -f "$SCRIPT_DIR/env.example.txt" ]; then
-        cp "$SCRIPT_DIR/env.example.txt" .env
+    elif [ -f "$SCRIPT_DIR/.env.example" ]; then
+        cp "$SCRIPT_DIR/.env.example" .env
         print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
         echo ""
         echo "  Editiere .env:"
@@ -153,7 +152,7 @@ fi
 echo "Schritt 4: Baue Docker Image..."
 echo ""
 
-docker-compose build
+sudo docker-compose build
 
 print_success "Docker Image gebaut"
 echo ""
@@ -170,7 +169,7 @@ echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Starte Training (dies kann 15-20 Minuten dauern)..."
-    docker-compose --profile training up training
+    sudo docker-compose --profile training up training
     print_success "Training abgeschlossen"
 else
     print_warning "Training übersprungen"
@@ -187,24 +186,24 @@ echo ""
 echo "Schritt 6: Starte Trading Bot..."
 echo ""
 
-docker-compose up -d trading-bot
+sudo docker-compose up -d trading-bot
 
 sleep 5
 
 # Status prüfen
-if docker ps | grep -q "kraken-trading-bot"; then
+if sudo docker ps | grep -q "kraken-trading-bot"; then
     print_success "Trading Bot läuft!"
     echo ""
     echo "  Container Status:"
-    docker-compose ps
+    sudo docker-compose ps
     echo ""
     echo "  Logs anzeigen:"
-    echo "  docker-compose logs -f trading-bot"
+    echo "  sudo docker-compose logs -f trading-bot"
 else
     print_error "Trading Bot konnte nicht gestartet werden!"
     echo ""
     echo "  Prüfe Logs:"
-    echo "  docker-compose logs trading-bot"
+    echo "  sudo docker-compose logs trading-bot"
     exit 1
 fi
 

@@ -1,0 +1,41 @@
+{
+  "balance": 6997.0,
+  "equity": 9973.601199078175,
+  "positions": {
+    "ETH/EUR": {
+      "amount": 0.882973619691489,
+      "avg_price": 3397.61,
+      "total_cost": 3003.0,
+      "side": "long",
+      "entry_time": "2025-10-19T11:19:47.591384"
+    }
+  },
+  "trades": [
+    {
+      "id": "004550b2-72be-433a-a1de-b15a9af2dc87",
+      "symbol": "ETH/EUR",
+      "side": "buy",
+      "amount": 0.882973619691489,
+      "price": 3397.61,
+      "cost": 3000.0,
+      "fee": 3.0,
+      "timestamp": "2025-10-19T11:19:47.591374",
+      "status": "closed",
+      "stop_loss": 3356.8386800000003,
+      "take_profit": 3519.92396,
+      "strategy": "breakout",
+      "risk_reward_ratio": 3.000000000000011,
+      "pnl": 0
+    }
+  ],
+  "performance": {
+    "total_trades": 1,
+    "winning_trades": 0,
+    "losing_trades": 0,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "max_drawdown": 0.0,
+    "sharpe_ratio": 0.0
+  },
+  "last_updated": "2025-10-19T12:57:35.985551"
+}

@@ -1,5 +1,5 @@
 # Dockerfile für Advanced AI Trading Bot
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 # Metadata
 LABEL maintainer="Trading Bot Team"
@@ -22,7 +22,8 @@ WORKDIR /app
 
 # Python Dependencies zuerst kopieren (für Docker Cache)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # TextBlob und NLTK Daten herunterladen (für Sentiment-Analyse)
 RUN python -m textblob.download_corpora && \

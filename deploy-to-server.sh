@@ -73,6 +73,7 @@ if ! check_command docker-compose; then
 fi
 
 echo ""
+newgrp docker
 print_success "Alle Voraussetzungen erfüllt"
 echo ""
 

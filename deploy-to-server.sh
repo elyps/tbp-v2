@@ -115,19 +115,50 @@ echo "Schritt 3: Konfiguriere Umgebungsvariablen..."
 echo ""
 
 if [ ! -f .env ]; then
+    echo "Suche nach .env Vorlage-Dateien..."
+
+    # Debug: Zeige aktuelles Verzeichnis und SCRIPT_DIR
+    echo "Aktuelles Verzeichnis: $(pwd)"
+    echo "SCRIPT_DIR: $SCRIPT_DIR"
+
+    TEMPLATE_FOUND=false
+
+    # 1. Versuche env.example.txt aus dem Quellverzeichnis
     if [ -f "$SCRIPT_DIR/env.example.txt" ]; then
+        echo "✓ Gefunden: $SCRIPT_DIR/env.example.txt"
         cp "$SCRIPT_DIR/env.example.txt" .env
-        print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
-        echo ""
-        echo "  Editiere .env:"
-        echo "  nano $INSTALL_DIR/.env"
-        echo ""
-        echo "  Mindestens erforderlich:"
-        echo "  - KRAKEN_API_KEY"
-        echo "  - KRAKEN_API_SECRET"
-        echo ""
-    elif [ -f env.example.txt ]; then
-        cp env.example.txt .env
+        TEMPLATE_FOUND=true
+    fi
+
+    # 2. Versuche lokale env.example.txt
+    if [ ! "$TEMPLATE_FOUND" = true ] && [ -f "env.example.txt" ]; then
+        echo "✓ Gefunden: $(pwd)/env.example.txt"
+        cp "env.example.txt" .env
+        TEMPLATE_FOUND=true
+    fi
+
+    # 3. Versuche .env.example aus dem Quellverzeichnis
+    if [ ! "$TEMPLATE_FOUND" = true ] && [ -f "$SCRIPT_DIR/.env.example" ]; then
+        echo "✓ Gefunden: $SCRIPT_DIR/.env.example"
+        cp "$SCRIPT_DIR/.env.example" .env
+        TEMPLATE_FOUND=true
+    fi
+
+    # 4. Versuche lokale .env.example
+    if [ ! "$TEMPLATE_FOUND" = true ] && [ -f ".env.example" ]; then
+        echo "✓ Gefunden: $(pwd)/.env.example"
+        cp ".env.example" .env
+        TEMPLATE_FOUND=true
+    fi
+
+    # 5. Versuche .env.template (als letzten Ausweg)
+    if [ ! "$TEMPLATE_FOUND" = true ] && [ -f "$SCRIPT_DIR/.env.template" ]; then
+        echo "✓ Gefunden: $SCRIPT_DIR/.env.template"
+        cp "$SCRIPT_DIR/.env.template" .env
+        TEMPLATE_FOUND=true
+    fi
+
+    if [ "$TEMPLATE_FOUND" = true ]; then
         print_warning ".env Datei erstellt - BITTE API KEYS EINTRAGEN!"
         echo ""
         echo "  Editiere .env:"
@@ -138,7 +169,16 @@ if [ ! -f .env ]; then
         echo "  - KRAKEN_API_SECRET"
         echo ""
     else
-        print_error ".env.example nicht gefunden!"
+        print_error "Keine .env Vorlage gefunden!"
+        echo ""
+        echo "Debug-Informationen:"
+        echo "  Script-Verzeichnis: $SCRIPT_DIR"
+        echo "  Install-Verzeichnis: $(pwd)"
+        echo "  Gesucht nach:"
+        ls -la "$SCRIPT_DIR" | grep -E "(env\.example|\.env\.template)" || echo "  Keine Template-Dateien im Script-Verzeichnis gefunden"
+        ls -la . | grep -E "(env\.example|\.env\.template)" || echo "  Keine Template-Dateien im aktuellen Verzeichnis gefunden"
+        echo ""
+        echo "Bitte stellen Sie sicher, dass eine Template-Datei existiert."
         exit 1
     fi
 else

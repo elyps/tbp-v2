@@ -235,7 +235,6 @@ class HistoricalTrainer:
         # Fülle die restlichen Labels auf, für die wir keine Zukunft haben
         while len(labels) < len(df):
             labels.append(1) # Neutral
-                continue
         
         return labels
     

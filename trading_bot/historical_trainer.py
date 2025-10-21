@@ -330,6 +330,9 @@ class HistoricalTrainer:
         position = 0
         position_entry_price = 0
         trades = []
+        stop_loss_price = 0
+        take_profit_price = 0
+        risk_reward_ratio = 1.5  # Standard R/R-Verhältnis
         
         for i in range(len(df_indicators)):
             row_df = df_indicators.iloc[:i+1]
@@ -344,36 +347,55 @@ class HistoricalTrainer:
             
             current_price = df_indicators['close'].iloc[i]
             
-            # Trading-Logik
-            if signal == 1 and position == 0 and confidence > 0.6:  # Kaufen
+            # --- Exit-Logik (Stop-Loss / Take-Profit) ---
+            if position > 0:
+                # Stop-Loss prüfen
+                if current_price <= stop_loss_price:
+                    reason = 'STOP-LOSS'
+                    sell_value = position * stop_loss_price  # Ausführung zum SL-Preis
+                    pnl = sell_value - (position * position_entry_price)
+                    balance += sell_value
+                    trades.append({'type': 'SELL', 'price': stop_loss_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': reason})
+                    position = 0
+                    logger.info(f"  -> {reason} bei ${stop_loss_price:.2f}, P&L: ${pnl:.2f}")
+                    continue
+                
+                # Take-Profit prüfen
+                if current_price >= take_profit_price:
+                    reason = 'TAKE-PROFIT'
+                    sell_value = position * take_profit_price # Ausführung zum TP-Preis
+                    pnl = sell_value - (position * position_entry_price)
+                    balance += sell_value
+                    trades.append({'type': 'SELL', 'price': take_profit_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': reason})
+                    position = 0
+                    logger.info(f"  -> {reason} bei ${take_profit_price:.2f}, P&L: ${pnl:.2f}")
+                    continue
+
+            # --- Entry-Logik (Kaufen) ---
+            if signal == 1 and position == 0 and confidence > 0.7:  # Kaufen (Konfidenz an Bot-Config angepasst)
                 # Kaufe Position
                 amount = balance * 0.95 / current_price  # 95% des Kapitals
                 position = amount
                 position_entry_price = current_price
                 balance -= amount * current_price
                 
-                trades.append({
-                    'type': 'BUY',
-                    'price': current_price,
-                    'amount': amount,
-                    'date': df_indicators.index[i]
-                })
+                # Setze Stop-Loss und Take-Profit
+                atr = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
+                stop_loss_price = current_price - (atr * 2.0) # ATR-basierter Stop-Loss (Faktor 2.0)
+                profit_target = current_price + (atr * 2.0 * risk_reward_ratio)
+                take_profit_price = profit_target
+                
+                trades.append({'type': 'BUY', 'price': current_price, 'amount': amount, 'date': df_indicators.index[i]})
+                logger.info(f"  -> KAUF bei ${current_price:.2f}, SL: ${stop_loss_price:.2f}, TP: ${take_profit_price:.2f}")
             
-            elif signal == -1 and position > 0:  # Verkaufen
+            # --- Exit-Logik (Verkaufen basierend auf Signal) ---
+            elif signal == -1 and position > 0 and confidence > 0.6:  # Verkaufen
                 # Verkaufe Position
                 sell_value = position * current_price
                 pnl = sell_value - (position * position_entry_price)
                 balance += sell_value
-                
-                trades.append({
-                    'type': 'SELL',
-                    'price': current_price,
-                    'amount': position,
-                    'pnl': pnl,
-                    'pnl_percent': (pnl / (position * position_entry_price)) * 100,
-                    'date': df_indicators.index[i]
-                })
-                
+                trades.append({'type': 'SELL', 'price': current_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': 'Signal'})
+                logger.info(f"  -> VERKAUF (Signal) bei ${current_price:.2f}, P&L: ${pnl:.2f}")
                 position = 0
         
         # Schließe offene Position
@@ -382,14 +404,7 @@ class HistoricalTrainer:
             pnl = final_value - (position * position_entry_price)
             balance += final_value
             
-            trades.append({
-                'type': 'SELL (Final)',
-                'price': df_indicators['close'].iloc[-1],
-                'amount': position,
-                'pnl': pnl,
-                'pnl_percent': (pnl / (position * position_entry_price)) * 100,
-                'date': df_indicators.index[-1]
-            })
+            trades.append({'type': 'SELL (Final)', 'price': df_indicators['close'].iloc[-1], 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[-1], 'reason': 'End of Backtest'})
         
         # Statistiken
         final_balance = balance

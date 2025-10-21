@@ -232,10 +232,13 @@ class HistoricalTrainer:
             
             if tp_hit_idx != -1 and (sl_hit_idx == -1 or tp_hit_idx < sl_hit_idx):
                 # Take-Profit wurde zuerst erreicht -> Guter Kauf
-                label = 2
+                label = 2  # KAUFEN
+            elif sl_hit_idx != -1 and (tp_hit_idx == -1 or sl_hit_idx < tp_hit_idx):
+                # Stop-Loss wurde zuerst erreicht -> Schlechter Kauf / Verkauf
+                label = 0  # VERKAUFEN
             else:
-                # Entweder wurde SL zuerst erreicht oder gar nichts -> Halten/Verkaufen
-                label = 1 # Wir fokussieren uns auf klare Kaufsignale
+                # Weder TP noch SL wurden im Fenster erreicht -> Halten
+                label = 1  # HALTEN
             
             labels.append(label)
         

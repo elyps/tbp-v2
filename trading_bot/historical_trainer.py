@@ -353,8 +353,9 @@ class HistoricalTrainer:
         position_entry_price = 0
         trades = []
         stop_loss_price = 0.0
-        take_profit_price = 0.0
-        risk_reward_ratio = 1.2  # Aggressiver für Day-Trading: 1.2
+        # take_profit_price = 0.0 # Ersetzt durch Trailing Stop
+        trailing_stop_activated = False
+        risk_reward_ratio = 1.5  # Erhöht für besseres R/R-Verhältnis
         
         for i in range(len(df_indicators)):
             row_df = df_indicators.iloc[:i+1]
@@ -371,44 +372,43 @@ class HistoricalTrainer:
             
             # --- Exit-Logik (Stop-Loss / Take-Profit) ---
             if position > 0:
+                # Trailing Stop-Loss Logik
+                if trailing_stop_activated:
+                    # Der neue Stop-Loss ist der alte, oder der aktuelle Preis minus dem ATR-Abstand, je nachdem was höher ist
+                    new_stop_loss = current_price - (df_indicators['atr'].iloc[i] * 2.0)
+                    stop_loss_price = max(stop_loss_price, new_stop_loss)
+
                 # Stop-Loss prüfen
                 if current_price <= stop_loss_price:
-                    reason = 'STOP-LOSS'
+                    reason = 'TRAILING STOP' if trailing_stop_activated else 'STOP-LOSS'
                     sell_value = position * stop_loss_price  # Ausführung zum SL-Preis
                     pnl = sell_value - (position * position_entry_price)
                     balance += sell_value
                     trades.append({'type': 'SELL', 'price': stop_loss_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': reason})
                     position = 0
+                    trailing_stop_activated = False
                     logger.info(f"  -> {reason} bei ${stop_loss_price:.2f}, P&L: ${pnl:.2f}")
-                    continue
-                
-                # Take-Profit prüfen
-                if current_price >= take_profit_price:
-                    reason = 'TAKE-PROFIT'
-                    sell_value = position * take_profit_price # Ausführung zum TP-Preis
-                    pnl = sell_value - (position * position_entry_price)
-                    balance += sell_value
-                    trades.append({'type': 'SELL', 'price': take_profit_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': reason})
-                    position = 0
-                    logger.info(f"  -> {reason} bei ${take_profit_price:.2f}, P&L: ${pnl:.2f}")
                     continue
 
             # --- Entry-Logik (Kaufen) ---
-            if signal == 1 and position == 0 and confidence > 0.65:  # Konfidenz für mehr Trades leicht gesenkt
+            if signal == 1 and position == 0 and confidence > 0.60:  # Konfidenz für mehr Trades gesenkt
                 # Kaufe Position
                 amount = balance * 0.95 / current_price  # 95% des Kapitals
                 position = amount
                 position_entry_price = current_price
                 balance -= amount * current_price
+                trailing_stop_activated = True # Trailing Stop für diesen Trade aktivieren
                 
                 # Setze Stop-Loss und Take-Profit
                 atr = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
-                stop_loss_price = current_price - (atr * 1.5) # Engerer Stop-Loss für kurzfristige Trades
-                profit_target = current_price + (atr * 2.0 * risk_reward_ratio)
-                take_profit_price = profit_target
+                stop_loss_price = current_price - (atr * 1.2) # Engerer Stop-Loss
+                
+                # Take-Profit wird nicht mehr festgesetzt, sondern durch den Trailing Stop realisiert
+                # Wir definieren aber ein initiales Ziel, um das RRR zu visualisieren
+                initial_target_price = current_price + (atr * 1.2 * risk_reward_ratio)
                 
                 trades.append({'type': 'BUY', 'price': current_price, 'amount': amount, 'date': df_indicators.index[i]})
-                logger.info(f"  -> KAUF bei ${current_price:.2f}, SL: ${stop_loss_price:.2f}, TP: ${take_profit_price:.2f}")
+                logger.info(f"  -> KAUF bei ${current_price:.2f}, SL: ${stop_loss_price:.2f}, Initial-Ziel: ${initial_target_price:.2f}")
             
             # --- Exit-Logik (Verkaufen basierend auf Signal) ---
             elif signal == -1 and position > 0 and confidence > 0.6:  # Verkaufen
@@ -418,6 +418,7 @@ class HistoricalTrainer:
                 balance += sell_value
                 trades.append({'type': 'SELL', 'price': current_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': 'Signal'})
                 logger.info(f"  -> VERKAUF (Signal) bei ${current_price:.2f}, P&L: ${pnl:.2f}")
+                trailing_stop_activated = False
                 position = 0
         
         # Schließe offene Position

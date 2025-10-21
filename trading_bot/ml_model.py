@@ -350,8 +350,10 @@ class MLModel:
                 features_df['macd_positive'] = 1 if macd_hist > 0 else 0
                 features_df['macd_momentum'] = df['macd_hist'].tail(3).mean() if len(df) >= 3 else 0.0
             
-            # NaN-Werte mit 0 füllen
-            features_df = features_df.fillna(0).infer_objects(copy=False)
+            # NaN-Werte füllen und Datentypen für zukünftige Pandas-Versionen korrekt behandeln
+            # Zuerst alle Spalten in numerische Werte umwandeln, Fehler als NaN belassen
+            features_df = features_df.apply(pd.to_numeric, errors='coerce')
+            features_df = features_df.fillna(0)
             
             logger.debug(f"Features vorbereitet: {len(features_df.columns)} Features")
             

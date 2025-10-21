@@ -866,20 +866,23 @@ class TradingBot:
 def main():
     """Hauptfunktion zum Starten des Trading-Bots."""
     # Konfiguration anpassen (optional)
+    # 🧠 KI-gesteuerte Konfiguration: Priorisiert die Vorhersagen des trainierten Modells.
     config = {
         'settings': {
             'initial_balance': 1000.0,  # 1000€ Startkapital für sinnvolle Positions-Größen
-            'risk_per_trade': 1.5,  # Etwas konservativer: 1.5% Risiko pro Trade
-            'use_enhanced_pipeline': True,  # WICHTIG: Aktivieren wir die Enhanced Pipeline für bessere Signale
+            'risk_per_trade': 1.0,  # 1% Risiko pro Trade, da KI-Signale präziser sind
+            'use_enhanced_pipeline': False,  # Legacy Pipeline nutzen, um die reine ML-Strategie zu verwenden
             'continuous_learning': True,  # Aktiviere kontinuierliches Lernen
-            'min_samples_retrain': 100,  # Mind. 100 neue Trades für Retraining
+            'min_samples_retrain': 50,  # Schnelleres Nachtrainieren mit neuen Live-Daten
             'retrain_frequency_hours': 24,  # Retraining alle 24 Stunden
         },
         'strategies': {
-            'trend_following': {'enabled': True},
-            'mean_reversion': {'enabled': True}, # Aktivieren, um mehr Chancen bei Umkehrpunkten zu nutzen
-            'breakout': {'enabled': True},
-            'ml_based': {'enabled': True, 'min_confidence': 0.60}, # ML-Strategie mit moderater Konfidenz
+            # Deaktiviere einfache Strategien, um die KI entscheiden zu lassen
+            'trend_following': {'enabled': False},
+            'mean_reversion': {'enabled': False},
+            'breakout': {'enabled': False},
+            # Aktiviere NUR die KI-basierte Strategie mit einer soliden Konfidenzschwelle
+            'ml_based': {'enabled': True, 'min_confidence': 0.70},
         },
     }
     

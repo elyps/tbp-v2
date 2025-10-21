@@ -389,7 +389,7 @@ class HistoricalTrainer:
                     continue
 
             # --- Entry-Logik (Kaufen) ---
-            if signal == 1 and position == 0 and confidence > 0.65:  # Konfidenzschwelle leicht erhöht für Qualitätssignale
+            if signal == 1 and position == 0 and confidence > 0.58:  # Konfidenzschwelle gesenkt für mehr Trades
                 # Kaufe Position
                 amount = (balance * 0.75) / current_price  # Erhöhter Kapitaleinsatz (75%)
                 position = amount

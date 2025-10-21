@@ -164,7 +164,7 @@ class HistoricalTrainer:
         
         return stats
     
-    def _calculate_limit(self, years: int, timeframe: str) -> int:
+    def _calculate_limit(self, years: float, timeframe: str) -> int:
         """Berechnet die Anzahl der Kerzen basierend auf Jahren und Timeframe."""
         # Kerzen pro Jahr (ungefähr)
         candles_per_year = {
@@ -179,7 +179,7 @@ class HistoricalTrainer:
         }
         
         candles_per_year_value = candles_per_year.get(timeframe, 8760)  # Default: 1h
-        return years * candles_per_year_value
+        return int(years * candles_per_year_value)
     
     def _generate_labels(
         self,

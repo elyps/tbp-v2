@@ -259,7 +259,13 @@ class MLModel:
             'bb_position', 'bb_width', 'sma20_sma50_ratio', 'trend_alignment',
             'rsi_normalized', 'rsi_oversold', 'rsi_overbought', 'volume_ratio',
             'volume_trend', 'obv_trend', 'trend_strong', 'trend_weak',
-            'stoch_signal', 'macd_positive', 'macd_momentum'
+            'stoch_signal', 'macd_positive', 'macd_momentum',
+            # On-Chain & Futures Features (NEU)
+            'active_addresses', 'transaction_count', 'transaction_volume',
+            'exchange_inflow', 'exchange_outflow', 'exchange_netflow',
+            'whale_inflow', 'whale_outflow',
+            'futures_open_interest', 'futures_funding_rate', 'futures_long_liquidations',
+            'futures_short_liquidations', 'nvt_signal', 'sopr', 'mvrv_z_score'
         ]
 
     def _create_features_from_indicators(self, df: pd.DataFrame) -> pd.DataFrame:

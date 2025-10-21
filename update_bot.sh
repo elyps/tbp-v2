@@ -21,7 +21,7 @@ BOT_DIR="/home/elyps/tbp-v2" # Absoluter Pfad zu Ihrem Bot-Verzeichnis
 VENV_PATH="$BOT_DIR/.venv/bin/activate" # Pfad zur virtuellen Umgebung
 SCREEN_NAME="tradingbot" # Name der screen-Sitzung
 BACKUP_DIR="/home/elyps/bot_backups" # Verzeichnis für Backups
-GIT_BRANCH="main" # Der Git-Branch, der aktualisiert werden soll
+GIT_BRANCH="dev" # Der Git-Branch, der aktualisiert werden soll
 
 # --- Skript-Logik ---
 # Beendet das Skript bei Fehlern
@@ -46,19 +46,28 @@ print_info "Starte Update-Prozess für den Trading-Bot..."
 cd "$BOT_DIR"
 
 # 1. Bot stoppen
-print_info "Stoppe den laufenden Bot in der screen-Sitzung '$SCREEN_NAME'..."
-if screen -list | grep -q "$SCREEN_NAME"; then
-    # Sendet Strg+C an den Prozess in der screen-Sitzung
-    screen -S "$SCREEN_NAME" -X stuff $'\003'
-    sleep 5 # Gibt dem Prozess Zeit, sich zu beenden
+print_info "Suche und stoppe laufende Bot-Sitzungen mit dem Namen '$SCREEN_NAME'..."
+# Finde alle screen-Sitzungen, die den Namen tragen, und extrahiere ihre IDs
+SESSION_IDS=$(screen -ls | grep -o "[0-9]*\.$SCREEN_NAME" | awk -F. '{print $1}')
 
-    # Beendet die screen-Sitzung, falls sie noch läuft
-    if screen -list | grep -q "$SCREEN_NAME"; then
-        screen -S "$SCREEN_NAME" -X quit
-    fi
-    print_success "Bot wurde erfolgreich gestoppt."
+if [ -n "$SESSION_IDS" ]; then
+    for SESSION_ID in $SESSION_IDS; do
+        print_info "Sende Stopp-Signal (Strg+C) an Sitzung $SESSION_ID.$SCREEN_NAME..."
+        screen -S "$SESSION_ID.$SCREEN_NAME" -X stuff $'\003'
+    done
+
+    print_info "Warte 5 Sekunden, damit die Prozesse sich beenden können..."
+    sleep 5
+
+    for SESSION_ID in $SESSION_IDS; do
+        if screen -list | grep -q "$SESSION_ID.$SCREEN_NAME"; then
+            print_info "Beende verbleibende Sitzung $SESSION_ID.$SCREEN_NAME..."
+            screen -S "$SESSION_ID.$SCREEN_NAME" -X quit
+        fi
+    done
+    print_success "Alle Bot-Sitzungen wurden gestoppt."
 else
-    print_info "Keine laufende screen-Sitzung '$SCREEN_NAME' gefunden. Überspringe Stopp."
+    print_info "Keine laufenden Sitzungen mit dem Namen '$SCREEN_NAME' gefunden. Überspringe Stopp."
 fi
 
 # 2. Backup erstellen

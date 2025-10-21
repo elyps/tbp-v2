@@ -869,16 +869,17 @@ def main():
     config = {
         'settings': {
             'initial_balance': 1000.0,  # 1000€ Startkapital für sinnvolle Positions-Größen
-            'risk_per_trade': 2.0,  # 2% Risiko pro Trade
-            'use_enhanced_pipeline': False,  # WICHTIG: Legacy Pipeline - generiert mehr Signale!
+            'risk_per_trade': 1.5,  # Etwas konservativer: 1.5% Risiko pro Trade
+            'use_enhanced_pipeline': True,  # WICHTIG: Aktivieren wir die Enhanced Pipeline für bessere Signale
             'continuous_learning': True,  # Aktiviere kontinuierliches Lernen
             'min_samples_retrain': 100,  # Mind. 100 neue Trades für Retraining
             'retrain_frequency_hours': 24,  # Retraining alle 24 Stunden
         },
         'strategies': {
             'trend_following': {'enabled': True},
-            'mean_reversion': {'enabled': False},
+            'mean_reversion': {'enabled': True}, # Aktivieren, um mehr Chancen bei Umkehrpunkten zu nutzen
             'breakout': {'enabled': True},
+            'ml_based': {'enabled': True, 'min_confidence': 0.60}, # ML-Strategie mit moderater Konfidenz
         },
     }
     

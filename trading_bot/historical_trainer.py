@@ -218,17 +218,25 @@ class HistoricalTrainer:
             future_lows = low_prices[i+1 : i+1+forward_window]
             future_highs = high_prices[i+1 : i+1+forward_window]
             
-            label = 1 # Standard: Halten
+            tp_hit_idx = -1
+            sl_hit_idx = -1
             
             # Finde heraus, was zuerst getroffen wird
             for j in range(len(future_lows)):
                 if future_highs[j] >= profit_target_price:
-                    label = 2 # Kauf-Signal: Profitziel wurde zuerst erreicht
-                    break # Stop-Loss wurde getroffen
+                    tp_hit_idx = j
+                    break
                 if future_lows[j] <= loss_stop_price:
-                    label = 0 # Verkauf-Signal: Verlustschwelle wurde zuerst erreicht
-                    break # Take-Profit wurde getroffen
-
+                    sl_hit_idx = j
+                    break
+            
+            if tp_hit_idx != -1 and (sl_hit_idx == -1 or tp_hit_idx < sl_hit_idx):
+                # Take-Profit wurde zuerst erreicht -> Guter Kauf
+                label = 2
+            else:
+                # Entweder wurde SL zuerst erreicht oder gar nichts -> Halten/Verkaufen
+                label = 1 # Wir fokussieren uns auf klare Kaufsignale
+            
             labels.append(label)
         
         # Fülle die restlichen Labels auf, für die wir keine Zukunft haben
@@ -239,29 +247,31 @@ class HistoricalTrainer:
     
     def _extract_features_batch(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Extrahiert Features für alle Zeilen im DataFrame.
+        Extrahiert Features für alle Zeilen im DataFrame auf eine vektorisierte,
+        schnelle Weise.
         
         Args:
             df: DataFrame mit Indikatoren
             
         Returns:
-            DataFrame mit Features
+            DataFrame mit Features, bereit für das Training.
         """
-        features_list = []
+        # Nutze die _prepare_features Methode des ML-Modells, die für einen
+        # einzelnen Vorhersageschritt konzipiert ist, aber wende sie auf den
+        # gesamten DataFrame an, um die Features für das Training zu erhalten.
+        # Dies ist viel effizienter als eine Schleife.
         
-        for idx in range(len(df)):
-            # Nutze die _prepare_features Methode des ML-Modells
-            # Erstelle temporären DataFrame mit nur dieser Zeile
-            row_df = df.iloc[:idx+1].copy()  # Inkludiere Historie bis zu diesem Punkt
-            
-            if len(row_df) >= 50:  # Mindestens 50 Kerzen für gültige Indikatoren
-                features = self.ml_model._prepare_features(row_df)
-                if features is not None and not features.empty:
-                    features_list.append(features)
+        # Wir übergeben den gesamten DataFrame. _prepare_features sollte die
+        # letzte Zeile für die Feature-Generierung verwenden.
+        # Für das Training wollen wir aber Features für JEDE Zeile.
+        # Die einfachste und korrekte Methode ist, die Features direkt aus dem
+        # Indikatoren-DataFrame zu extrahieren.
+        features_df = self.ml_model._select_features_from_df(df)
         
-        if features_list:
-            return pd.concat(features_list, ignore_index=True)
-        return pd.DataFrame()
+        # Entferne Zeilen mit NaN-Werten, die durch Indikatoren-Berechnungen entstehen
+        features_df.dropna(inplace=True)
+        
+        return features_df
     
     def _add_news_features(self, df: pd.DataFrame, symbol: str) -> pd.DataFrame:
         """

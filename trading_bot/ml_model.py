@@ -252,14 +252,18 @@ class MLModel:
             # Basis-Indikatoren
             'sma_20', 'sma_50', 'ema_9', 'ema_21', 'rsi_14', 'macd_line', 
             'macd_signal', 'macd_hist', 'momentum', 'stoch_k', 'stoch_d', 
-            'bb_upper', 'bb_middle', 'bb_lower', 'atr', 'adx', 'plus_di', 
-            'minus_di', 'volume', 'obv',
+            'bb_upper', 'bb_middle', 'bb_lower', 'atr', 'adx', 'plus_di', 'minus_di', 
+            'volume', 'obv', 'cmf', 'vortex_pos', 'vortex_neg',
             # Abgeleitete Features
             'price_sma20_ratio', 'price_distance_sma20', 'price_sma50_ratio',
             'bb_position', 'bb_width', 'sma20_sma50_ratio', 'trend_alignment',
             'rsi_normalized', 'rsi_oversold', 'rsi_overbought', 'volume_ratio',
             'volume_trend', 'obv_trend', 'trend_strong', 'trend_weak',
-            'stoch_signal', 'macd_positive', 'macd_momentum',
+            'stoch_signal', 'macd_positive', 'macd_momentum', 'vortex_diff',
+            # Lag Features (NEU)
+            'rsi_lag_1', 'rsi_lag_3', 'rsi_lag_5',
+            'macd_hist_lag_1', 'macd_hist_lag_3',
+            'adx_lag_3', 'volume_ratio_lag_3',
             # On-Chain & Futures Features (NEU)
             'active_addresses', 'transaction_count', 'transaction_volume',
             'exchange_inflow', 'exchange_outflow', 'exchange_netflow',
@@ -310,6 +314,18 @@ class MLModel:
         # MACD Signal
         features_df['macd_positive'] = np.where(features_df['macd_hist'] > 0, 1, 0)
         features_df['macd_momentum'] = features_df['macd_hist'].rolling(window=3).mean()
+
+        # Vortex Difference
+        features_df['vortex_diff'] = features_df['vortex_pos'] - features_df['vortex_neg']
+
+        # Lag Features (NEU) - geben dem Modell historischen Kontext
+        lags = [1, 3, 5]
+        for lag in lags:
+            features_df[f'rsi_lag_{lag}'] = features_df['rsi_14'].shift(lag)
+        features_df['macd_hist_lag_1'] = features_df['macd_hist'].shift(1)
+        features_df['macd_hist_lag_3'] = features_df['macd_hist'].shift(3)
+        features_df['adx_lag_3'] = features_df['adx'].shift(3)
+        features_df['volume_ratio_lag_3'] = features_df['volume_ratio'].shift(3)
         
         # Ersetze unendliche Werte und fülle NaNs, die durch Berechnungen entstanden sind
         features_df.replace([np.inf, -np.inf], np.nan, inplace=True)

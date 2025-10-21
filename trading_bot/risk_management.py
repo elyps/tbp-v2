@@ -38,7 +38,8 @@ class RiskManager:
         self, 
         signals: List[Dict], 
         portfolio: Dict, 
-        current_price: float
+        current_price: float,
+        market_data: Optional[pd.DataFrame] = None
     ) -> List[Dict]:
         """
         Bewertet Risiko und erstellt Handelsentscheidungen.
@@ -47,6 +48,7 @@ class RiskManager:
             signals: Liste von Handelssignalen
             portfolio: Aktuelles Portfolio
             current_price: Aktueller Marktpreis
+            market_data: DataFrame mit aktuellen Marktdaten (für Volumen-Check)
             
         Returns:
             Liste von ausführbaren Handelsentscheidungen
@@ -98,6 +100,21 @@ class RiskManager:
                             num_open_positions,
                         )
                         continue
+
+                    # Live-Liquiditäts-Check (NEU)
+                    if market_data is not None and not market_data.empty:
+                        recent_volume = market_data['volume'].tail(24).mean() # Durchschnitt der letzten 24h
+                        min_volume_threshold = self.config.get('min_live_volume', 10) # Mindestvolumen (z.B. 10 BTC/ETH pro Stunde)
+                        if recent_volume < min_volume_threshold:
+                            logger.info(
+                                "RiskManager: BUY für %s verworfen, zu geringes Live-Volumen (%.2f < %.2f)",
+                                symbol,
+                                recent_volume,
+                                min_volume_threshold
+                            )
+                            continue
+                    else:
+                        logger.warning("Keine Marktdaten für Live-Liquiditäts-Check verfügbar.")
                 
                 decision = self._evaluate_signal(signal, current_price)
                 if decision:

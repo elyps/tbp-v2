@@ -50,8 +50,8 @@ def print_banner():
 def train_comprehensive_model(
     symbols=None,
     years=15,
-    timeframe='1d',
-    use_news=True,
+    timeframe='1h',  # STANDARD-TIMEFRAME AUF 1 STUNDE GESETZT
+    use_news=False,  # News für kurzfristiges Trading weniger relevant, beschleunigt Training
     run_backtest=True
 ):
     """
@@ -125,9 +125,9 @@ def train_comprehensive_model(
     try:
         stats = historical_trainer.train_on_historical_data(
             symbols=symbols,
-            years=years,
+            years=5,  # 5 Jahre an 1h-Daten sind mehr als genug
             timeframe=timeframe,
-            forward_window=10,
+            forward_window=12,  # 12 Stunden in die Zukunft schauen
             profit_threshold=0.01,
             use_news=use_news
         )
@@ -192,7 +192,7 @@ def train_comprehensive_model(
         # Backtest auf dem Hauptsymbol
         main_symbol = symbols[0]
         end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=365)  # 1 Jahr
+        start_date = end_date - timedelta(days=90)  # Backtest für die letzten 90 Tage
         
         try:
             results = historical_trainer.backtest_on_historical_data(
@@ -204,7 +204,7 @@ def train_comprehensive_model(
             )
             
             logger.info(f"Backtest Ergebnisse für {main_symbol}:")
-            logger.info(f"  Zeitraum: {start_date.strftime('%Y-%m-%d')} bis {end_date.strftime('%Y-%m-%d')}")
+            logger.info(f"  Zeitraum (1h-Kerzen): {start_date.strftime('%Y-%m-%d')} bis {end_date.strftime('%Y-%m-%d')}")
             logger.info(f"  Start-Kapital: ${results['initial_balance']:,.2f}")
             logger.info(f"  End-Kapital: ${results['final_balance']:,.2f}")
             logger.info(f"  Total Return: {results['total_return']:+.2f}%")
@@ -258,7 +258,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='Comprehensive AI Training')
     parser.add_argument('--years', type=int, default=15, help='Jahre historische Daten (default: 15)')
-    parser.add_argument('--timeframe', type=str, default='1d', choices=['1h', '4h', '1d', '1w'], help='Timeframe (default: 1d)')
+    parser.add_argument('--timeframe', type=str, default='1h', choices=['1h', '4h', '1d', '1w'], help='Timeframe (default: 1h)')
     parser.add_argument('--no-news', action='store_true', help='News-Integration deaktivieren')
     parser.add_argument('--no-backtest', action='store_true', help='Backtest überspringen')
     parser.add_argument('--symbols', type=str, nargs='+', help='Spezifische Symbole (z.B. BTC/USD ETH/USD)')

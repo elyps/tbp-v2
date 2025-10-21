@@ -92,6 +92,15 @@ class HistoricalTrainer:
                     stats['errors'].append(f"{symbol}: Nicht genug Daten")
                     continue
                 
+                # Liquiditäts-Check: Überspringe illiquide Märkte
+                # Mindestens 1 Mio. USD/EUR/etc. durchschnittliches Tagesvolumen
+                avg_daily_volume_quote = (df['close'] * df['volume']).mean()
+                min_liquidity_threshold = 1_000_000
+                if avg_daily_volume_quote < min_liquidity_threshold:
+                    logger.warning(f"{symbol}: Geringe Liquidität ({avg_daily_volume_quote:,.0f} < {min_liquidity_threshold:,.0f}) - überspringe")
+                    stats['errors'].append(f"{symbol}: Geringe Liquidität")
+                    continue
+
                 logger.info(f"{symbol}: {len(df)} Kerzen geladen (von {df.index[0]} bis {df.index[-1]})")
                 
                 # Berechne technische Indikatoren
@@ -343,9 +352,9 @@ class HistoricalTrainer:
         position = 0
         position_entry_price = 0
         trades = []
-        stop_loss_price = 0
-        take_profit_price = 0
-        risk_reward_ratio = 1.5  # Standard R/R-Verhältnis
+        stop_loss_price = 0.0
+        take_profit_price = 0.0
+        risk_reward_ratio = 1.2  # Aggressiver für Day-Trading: 1.2
         
         for i in range(len(df_indicators)):
             row_df = df_indicators.iloc[:i+1]
@@ -385,7 +394,7 @@ class HistoricalTrainer:
                     continue
 
             # --- Entry-Logik (Kaufen) ---
-            if signal == 1 and position == 0 and confidence > 0.7:  # Kaufen (Konfidenz an Bot-Config angepasst)
+            if signal == 1 and position == 0 and confidence > 0.65:  # Konfidenz für mehr Trades leicht gesenkt
                 # Kaufe Position
                 amount = balance * 0.95 / current_price  # 95% des Kapitals
                 position = amount
@@ -394,7 +403,7 @@ class HistoricalTrainer:
                 
                 # Setze Stop-Loss und Take-Profit
                 atr = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
-                stop_loss_price = current_price - (atr * 2.0) # ATR-basierter Stop-Loss (Faktor 2.0)
+                stop_loss_price = current_price - (atr * 1.5) # Engerer Stop-Loss für kurzfristige Trades
                 profit_target = current_price + (atr * 2.0 * risk_reward_ratio)
                 take_profit_price = profit_target
                 

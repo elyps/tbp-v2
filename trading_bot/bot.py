@@ -330,7 +330,8 @@ class TradingBot:
         trade_decisions = self.risk_manager.evaluate_risk(
             signals=signals + exit_signals,
             portfolio=self.portfolio,
-            current_price=df_with_indicators['close'].iloc[-1]
+            current_price=df_with_indicators['close'].iloc[-1],
+            market_data=df_with_indicators
         )
 
         if trade_decisions:

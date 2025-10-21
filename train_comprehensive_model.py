@@ -200,7 +200,7 @@ def train_comprehensive_model(
                 start_date=start_date.strftime('%Y-%m-%d'),
                 end_date=end_date.strftime('%Y-%m-%d'),
                 timeframe=timeframe,
-                initial_balance=10000.0
+                initial_balance=100.0
             )
             
             logger.info(f"Backtest Ergebnisse für {main_symbol}:")

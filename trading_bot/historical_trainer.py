@@ -347,11 +347,12 @@ class HistoricalTrainer:
         
         # Simulation
         balance = initial_balance
-        position = 0
+        position = 0  # 0: flat, >0: long, <0: short
         position_entry_price = 0
         trades = []
         stop_loss_price = 0.0
-        highest_price_since_entry = 0.0
+        highest_price_since_entry = 0.0  # For long trades
+        lowest_price_since_entry = float('inf') # For short trades
         
         for i in tqdm(range(len(df_indicators)), desc="Backtesting"):
             row_df = df_indicators.iloc[:i+1]
@@ -387,6 +388,27 @@ class HistoricalTrainer:
                     position = 0
                     logger.info(f"  -> {reason} bei ${stop_loss_price:.2f}, P&L: ${pnl:.2f}")
                     continue
+            
+            # --- Exit-Logik für SHORT Position ---
+            elif position < 0:
+                # Update niedrigsten Preis für Trailing Stop
+                lowest_price_since_entry = min(lowest_price_since_entry, current_price)
+                
+                # Trailing Stop-Loss Logik: Passe den Stop-Loss nach unten an
+                atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
+                new_stop_loss = lowest_price_since_entry + (atr_val * 2.0)
+                stop_loss_price = min(stop_loss_price, new_stop_loss)
+                
+                # Stop-Loss prüfen (Preis steigt über SL)
+                if current_price >= stop_loss_price:
+                    reason = 'SHORT TRAILING STOP' if stop_loss_price < (position_entry_price + (atr_val * 1.5)) else 'SHORT STOP-LOSS'
+                    buy_back_value = abs(position) * stop_loss_price
+                    pnl = (abs(position) * position_entry_price) - buy_back_value
+                    balance -= (buy_back_value - (abs(position) * position_entry_price))
+                    trades.append({'type': 'COVER', 'price': stop_loss_price, 'amount': abs(position), 'pnl': pnl, 'pnl_percent': (pnl / (abs(position) * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': reason})
+                    position = 0
+                    logger.info(f"  -> {reason} bei ${stop_loss_price:.2f}, P&L: ${pnl:.2f}")
+                    continue
 
             # --- Entry-Logik (Kaufen) ---
             if signal == 1 and position == 0 and confidence > 0.52:  # Konfidenzschwelle weiter gesenkt für deutlich mehr Trades
@@ -399,12 +421,27 @@ class HistoricalTrainer:
                 # Setze initialen Stop-Loss basierend auf ATR
                 atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
                 stop_loss_price = current_price - (atr_val * 1.5) # Initialer Stop-Loss
-                highest_price_since_entry = current_price
+                highest_price_since_entry = current_price # Reset für neuen Trade
                 trades.append({'type': 'BUY', 'price': current_price, 'amount': amount, 'date': df_indicators.index[i]})
                 logger.info(f"  -> KAUF bei ${current_price:.2f}, Initial-SL: ${stop_loss_price:.2f}")
             
-            # --- Exit-Logik (Verkaufen basierend auf Signal) ---
-            elif signal == -1 and position > 0 and confidence > 0.6:  # Verkaufen
+            # --- Entry-Logik (Shorten) ---
+            elif signal == -1 and position == 0 and confidence > 0.52: # Gleiche Schwelle für Short
+                # Verkaufe (short) Position
+                amount = (balance * 0.75) / current_price
+                position = -amount # Negative Position für Short
+                position_entry_price = current_price
+                # Balance ändert sich beim Shorten nicht direkt, erst beim Schließen
+                
+                # Setze initialen Stop-Loss (über dem Preis)
+                atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
+                stop_loss_price = current_price + (atr_val * 1.5)
+                lowest_price_since_entry = current_price # Reset für neuen Trade
+                trades.append({'type': 'SHORT', 'price': current_price, 'amount': amount, 'date': df_indicators.index[i]})
+                logger.info(f"  -> SHORT bei ${current_price:.2f}, Initial-SL: ${stop_loss_price:.2f}")
+
+            # --- Exit-Logik (Gegensignal) ---
+            elif signal == -1 and position > 0 and confidence > 0.6:  # Verkaufssignal schließt Long-Position
                 # Verkaufe Position
                 sell_value = position * current_price
                 pnl = sell_value - (position * position_entry_price)
@@ -412,14 +449,27 @@ class HistoricalTrainer:
                 trades.append({'type': 'SELL', 'price': current_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': 'Signal'})
                 logger.info(f"  -> VERKAUF (Signal) bei ${current_price:.2f}, P&L: ${pnl:.2f}")
                 position = 0
+            
+            elif signal == 1 and position < 0 and confidence > 0.6: # Kaufsignal schließt Short-Position
+                # Kaufe Position zurück (cover)
+                buy_back_value = abs(position) * current_price
+                pnl = (abs(position) * position_entry_price) - buy_back_value
+                balance -= (buy_back_value - (abs(position) * position_entry_price))
+                trades.append({'type': 'COVER', 'price': current_price, 'amount': abs(position), 'pnl': pnl, 'pnl_percent': (pnl / (abs(position) * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': 'Signal'})
+                logger.info(f"  -> COVER (Signal) bei ${current_price:.2f}, P&L: ${pnl:.2f}")
+                position = 0
         
         # Schließe offene Position
         if position > 0:
             final_value = position * df_indicators['close'].iloc[-1]
             pnl = final_value - (position * position_entry_price)
             balance += final_value
-            
             trades.append({'type': 'SELL (Final)', 'price': df_indicators['close'].iloc[-1], 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[-1], 'reason': 'End of Backtest'})
+        elif position < 0:
+            buy_back_value = abs(position) * df_indicators['close'].iloc[-1]
+            pnl = (abs(position) * position_entry_price) - buy_back_value
+            balance -= (buy_back_value - (abs(position) * position_entry_price))
+            trades.append({'type': 'COVER (Final)', 'price': df_indicators['close'].iloc[-1], 'amount': abs(position), 'pnl': pnl, 'pnl_percent': (pnl / (abs(position) * position_entry_price)) * 100, 'date': df_indicators.index[-1], 'reason': 'End of Backtest'})
         
         # Statistiken
         final_balance = balance

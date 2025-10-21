@@ -382,6 +382,9 @@ class HistoricalTrainer:
         # Indikatoren berechnen
         df_indicators = self.indicators.calculate_all(df)
         
+        # On-Chain Features hinzufügen (Platzhalter)
+        df_indicators = self._add_onchain_features(df_indicators)
+        
         # Simulation
         balance = initial_balance
         position = 0  # 0: flat, >0: long, <0: short

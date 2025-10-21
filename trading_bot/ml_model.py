@@ -210,11 +210,15 @@ class MLModel:
             prediction = self.model.predict(X_scaled)[0]
             probabilities = self.model.predict_proba(X_scaled)[0]
             
-            # Label-Mapping zurück: 0,1,2 -> -1,0,1
-            # 0 (XGBoost) -> -1 (Verkauf)
-            # 1 (XGBoost) ->  0 (Halten)
-            # 2 (XGBoost) ->  1 (Kauf)
-            signal_mapped = int(prediction) - 1
+            # Label-Mapping zurück: 0,1,2 -> -1,1,0
+            # 0 (XGBoost-Label) -> -1 (Verkaufssignal)
+            # 1 (XGBoost-Label) ->  0 (Haltensignal)
+            # 2 (XGBoost-Label) ->  1 (Kaufsignal)
+            signal_map = {0: -1, 1: 0, 2: 1}
+            signal_mapped = signal_map.get(int(prediction), 0)
+            
+            if int(prediction) not in signal_map:
+                logger.warning(f"Unerwartetes Prediction-Label '{prediction}' erhalten. Wird als 'Halten' behandelt.")
             
             # Ergebnis formatieren
             result = {

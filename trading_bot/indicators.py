@@ -126,33 +126,28 @@ class TechnicalIndicators:
                     df[f'volume_ma_{period}'] = self.calculate_sma(df['volume'], period)
             
             # Chaikin Money Flow (CMF)
-            if 'cmf' in self.config:
-                try:
-                    cmf_period = self.config['cmf'].get('window', 20)
-                    df['cmf'] = ta.cmf(
-                        high=df['high'],
-                        low=df['low'],
-                        close=df['close'],
-                        volume=df['volume'],
-                        length=cmf_period
-                    )
-                    logger.debug(f"CMF berechnet (Period: {cmf_period})")
-                except Exception as e:
-                    logger.warning(f"Fehler bei CMF-Berechnung: {e}")
-                    df['cmf'] = 0.0
+            try:
+                cmf_period = self.config.get('cmf', {}).get('window', 20)
+                df['cmf'] = ta.cmf(
+                    high=df['high'], low=df['low'], close=df['close'],
+                    volume=df['volume'], length=cmf_period
+                )
+                logger.debug(f"CMF berechnet (Period: {cmf_period})")
+            except Exception as e:
+                logger.warning(f"Fehler bei CMF-Berechnung: {e}")
+                df['cmf'] = 0.0
 
             # Vortex Indicator (VI)
-            if 'vortex' in self.config:
-                try:
-                    vortex_period = self.config['vortex'].get('window', 14)
-                    vortex = ta.vortex(high=df['high'], low=df['low'], close=df['close'], length=vortex_period)
-                    df['vortex_pos'] = vortex[f'VTXP_{vortex_period}']
-                    df['vortex_neg'] = vortex[f'VTXN_{vortex_period}']
-                    logger.debug(f"Vortex Indicator berechnet (Period: {vortex_period})")
-                except Exception as e:
-                    logger.warning(f"Fehler bei Vortex-Berechnung: {e}")
-                    df['vortex_pos'] = 0.5
-                    df['vortex_neg'] = 0.5
+            try:
+                vortex_period = self.config.get('vortex', {}).get('window', 14)
+                vortex = ta.vortex(high=df['high'], low=df['low'], close=df['close'], length=vortex_period)
+                df['vortex_pos'] = vortex[f'VTXP_{vortex_period}']
+                df['vortex_neg'] = vortex[f'VTXN_{vortex_period}']
+                logger.debug(f"Vortex Indicator berechnet (Period: {vortex_period})")
+            except Exception as e:
+                logger.warning(f"Fehler bei Vortex-Berechnung: {e}")
+                df['vortex_pos'] = 0.5
+                df['vortex_neg'] = 0.5
 
             # Weitere Indikatoren können hier hinzugefügt werden
             

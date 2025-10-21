@@ -39,9 +39,9 @@ class HistoricalTrainer:
     def train_on_historical_data(
         self,
         symbols: List[str],
-        years: int = 15,
-        timeframe: str = '1d',
-        forward_window: int = 8,      # Verkürzt für schnellere Signale
+        years: int = 3,  # Für 15m sind 3 Jahre mehr als genug Daten
+        timeframe: str = '15m', # Wechsel auf kürzeren Timeframe für mehr Trades
+        forward_window: int = 12,     # 3 Stunden auf einem 15m Chart
         profit_threshold: float = 0.005,  # Gesenkt für mehr Gelegenheiten (0.5%)
         use_news: bool = False
     ) -> Dict:
@@ -310,7 +310,7 @@ class HistoricalTrainer:
         symbol: str,
         start_date: str,
         end_date: str,
-        timeframe: str = '1d',
+        timeframe: str = '15m', # Backtest auf dem gleichen Timeframe wie das Training
         initial_balance: float = 10000.0
     ) -> Dict:
         """

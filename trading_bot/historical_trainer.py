@@ -179,7 +179,7 @@ class HistoricalTrainer:
         }
         
         candles_per_year_value = candles_per_year.get(timeframe, 8760)  # Default: 1h
-        return min(years * candles_per_year_value, 10000)  # Max 10000 Kerzen pro API-Call
+        return years * candles_per_year_value
     
     def _generate_labels(
         self,

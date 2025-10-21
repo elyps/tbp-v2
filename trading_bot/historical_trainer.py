@@ -350,8 +350,8 @@ class HistoricalTrainer:
         position = 0
         position_entry_price = 0
         trades = []
-        stop_loss_price = 0.0 # Wird pro Trade gesetzt
-        take_profit_price = 0.0 # Wird pro Trade gesetzt
+        stop_loss_price = 0.0
+        highest_price_since_entry = 0.0
         
         for i in tqdm(range(len(df_indicators)), desc="Backtesting"):
             row_df = df_indicators.iloc[:i+1]
@@ -368,9 +368,18 @@ class HistoricalTrainer:
             
             # --- Exit-Logik (Stop-Loss / Take-Profit) ---
             if position > 0:
+                # Update höchsten Preis für Trailing Stop
+                highest_price_since_entry = max(highest_price_since_entry, current_price)
+                
+                # Trailing Stop-Loss Logik: Passe den Stop-Loss nach oben an
+                # Der neue Stop-Loss ist der alte, oder der aktuelle Höchstpreis minus dem ATR-Abstand, je nachdem was höher ist
+                atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
+                new_stop_loss = highest_price_since_entry - (atr_val * 2.0) # Etwas mehr Puffer für den Trail
+                stop_loss_price = max(stop_loss_price, new_stop_loss)
+
                 # Stop-Loss prüfen
                 if current_price <= stop_loss_price:
-                    reason = 'STOP-LOSS'
+                    reason = 'TRAILING STOP' if stop_loss_price > (position_entry_price - (atr_val * 1.5)) else 'STOP-LOSS'
                     sell_value = position * stop_loss_price  # Ausführung zum SL-Preis
                     pnl = sell_value - (position * position_entry_price)
                     balance += sell_value
@@ -378,31 +387,21 @@ class HistoricalTrainer:
                     position = 0
                     logger.info(f"  -> {reason} bei ${stop_loss_price:.2f}, P&L: ${pnl:.2f}")
                     continue
-                
-                # Take-Profit prüfen
-                if current_price >= take_profit_price:
-                    reason = 'TAKE-PROFIT'
-                    sell_value = position * take_profit_price # Ausführung zum TP-Preis
-                    pnl = sell_value - (position * position_entry_price)
-                    balance += sell_value
-                    trades.append({'type': 'SELL', 'price': take_profit_price, 'amount': position, 'pnl': pnl, 'pnl_percent': (pnl / (position * position_entry_price)) * 100, 'date': df_indicators.index[i], 'reason': reason})
-                    position = 0
-                    logger.info(f"  -> {reason} bei ${take_profit_price:.2f}, P&L: ${pnl:.2f}")
-                    continue
 
             # --- Entry-Logik (Kaufen) ---
-            if signal == 1 and position == 0 and confidence > 0.55:  # Konfidenzschwelle für mehr Trades weiter gesenkt
+            if signal == 1 and position == 0 and confidence > 0.65:  # Konfidenzschwelle leicht erhöht für Qualitätssignale
                 # Kaufe Position
-                amount = (balance * 0.5) / current_price  # Weniger Kapital pro Trade (50%) für mehr Frequenz
+                amount = (balance * 0.75) / current_price  # Erhöhter Kapitaleinsatz (75%)
                 position = amount
                 position_entry_price = current_price
                 balance -= amount * current_price
                 
-                # Setze sehr engen Stop-Loss und Take-Profit für Scalping
-                stop_loss_price = current_price * 0.995  # 0.5% Stop-Loss
-                take_profit_price = current_price * 1.006 # 0.6% Take-Profit (leicht asymmetrisch für positive Erwartung)
+                # Setze initialen Stop-Loss basierend auf ATR
+                atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
+                stop_loss_price = current_price - (atr_val * 1.5) # Initialer Stop-Loss
+                highest_price_since_entry = current_price
                 trades.append({'type': 'BUY', 'price': current_price, 'amount': amount, 'date': df_indicators.index[i]})
-                logger.info(f"  -> KAUF bei ${current_price:.2f}, SL: ${stop_loss_price:.2f}, TP: ${take_profit_price:.2f}")
+                logger.info(f"  -> KAUF bei ${current_price:.2f}, Initial-SL: ${stop_loss_price:.2f}")
             
             # --- Exit-Logik (Verkaufen basierend auf Signal) ---
             elif signal == -1 and position > 0 and confidence > 0.6:  # Verkaufen

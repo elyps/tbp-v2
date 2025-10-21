@@ -367,20 +367,19 @@ class HistoricalTrainer:
             
             current_price = df_indicators['close'].iloc[i]
             
-            # --- Exit-Logik (Stop-Loss / Take-Profit) ---
+            # --- Exit-Logik für LONG Position ---
             if position > 0:
                 # Update höchsten Preis für Trailing Stop
                 highest_price_since_entry = max(highest_price_since_entry, current_price)
                 
                 # Trailing Stop-Loss Logik: Passe den Stop-Loss nach oben an
-                # Der neue Stop-Loss ist der alte, oder der aktuelle Höchstpreis minus dem ATR-Abstand, je nachdem was höher ist
                 atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
                 new_stop_loss = highest_price_since_entry - (atr_val * 2.0) # Etwas mehr Puffer für den Trail
                 stop_loss_price = max(stop_loss_price, new_stop_loss)
 
                 # Stop-Loss prüfen
                 if current_price <= stop_loss_price:
-                    reason = 'TRAILING STOP' if stop_loss_price > (position_entry_price - (atr_val * 1.5)) else 'STOP-LOSS'
+                    reason = 'LONG TRAILING STOP' if stop_loss_price > (position_entry_price - (atr_val * 1.5)) else 'LONG STOP-LOSS'
                     sell_value = position * stop_loss_price  # Ausführung zum SL-Preis
                     pnl = sell_value - (position * position_entry_price)
                     balance += sell_value

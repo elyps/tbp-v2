@@ -141,8 +141,8 @@ class TechnicalIndicators:
             try:
                 vortex_period = self.config.get('vortex', {}).get('window', 14)
                 vortex = ta.vortex(high=df['high'], low=df['low'], close=df['close'], length=vortex_period)
-                df['vortex_pos'] = vortex[f'VIp_{vortex_period}']
-                df['vortex_neg'] = vortex[f'VIm_{vortex_period}']
+                df['vortex_pos'] = vortex[f'VTXP_{vortex_period}']
+                df['vortex_neg'] = vortex[f'VTXN_{vortex_period}']
                 logger.debug(f"Vortex Indicator berechnet (Period: {vortex_period})")
             except Exception as e:
                 logger.warning(f"Fehler bei Vortex-Berechnung: {e}")

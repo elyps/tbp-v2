@@ -328,11 +328,15 @@ class HistoricalTrainer:
         """
         logger.info(f"Starte Backtest für {symbol} von {start_date} bis {end_date}")
         
+        # Berechne die Anzahl der benötigten Kerzen für den Zeitraum
+        start_dt = datetime.fromisoformat(start_date)
+        end_dt = datetime.fromisoformat(end_date)
+        days = (end_dt - start_dt).days + 1 # +1 um den Endtag einzuschließen
+        limit = self._calculate_limit(days / 365, timeframe)
+        
         # Lade Daten
         df = self.data_provider.get_historical_data(
-            symbol=symbol,
-            timeframe=timeframe,
-            limit=5000
+            symbol=symbol, timeframe=timeframe, limit=limit
         )
         
         if df is None or df.empty:

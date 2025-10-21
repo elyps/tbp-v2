@@ -50,7 +50,7 @@ def print_banner():
 def train_comprehensive_model(
     symbols=None,
     years=15,
-    timeframe='1h',  # STANDARD-TIMEFRAME AUF 1 STUNDE GESETZT
+    timeframe='15m', # Standard auf 15m für hochfrequente Strategie
     use_news=False,  # News für kurzfristiges Trading weniger relevant, beschleunigt Training
     run_backtest=True
 ):
@@ -124,11 +124,11 @@ def train_comprehensive_model(
     
     try:
         stats = historical_trainer.train_on_historical_data(
-            symbols=symbols,
-            years=5,  # 5 Jahre an 1h-Daten sind mehr als genug
-            timeframe=timeframe,
-            forward_window=12,  # 12 Stunden in die Zukunft schauen
-            profit_threshold=0.01,
+            symbols=symbols, # Verwendet jetzt die Standardwerte aus der Methode
+            years=3,         # 3 Jahre 15m-Daten sind optimal
+            timeframe=timeframe, # '15m'
+            forward_window=12,   # 3 Stunden auf 15m-Chart
+            profit_threshold=0.005, # 0.5% für kurzfristige Chancen
             use_news=use_news
         )
         

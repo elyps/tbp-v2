@@ -125,10 +125,10 @@ def train_comprehensive_model(
     try:
         stats = historical_trainer.train_on_historical_data(
             symbols=symbols, # Verwendet jetzt die Standardwerte aus der Methode
-            years=3,         # 3 Jahre 15m-Daten sind optimal für das Training
+            years=3,         # 3 Jahre 15m-Daten sind optimal
             timeframe=timeframe, # '15m'
-            forward_window=10,   # Zurück zur stabileren Konfiguration
-            profit_threshold=0.01, # Zurück zur profitableren 1%-Schwelle
+            forward_window=8,    # Aggressive Konfiguration für hohe Frequenz
+            profit_threshold=0.005, # Kleinere Schwelle für mehr Chancen auf 15m-Chart
             use_news=use_news
         )
         

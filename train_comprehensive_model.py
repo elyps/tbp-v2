@@ -204,7 +204,7 @@ def train_comprehensive_model(
             )
             
             logger.info(f"Backtest Ergebnisse für {main_symbol}:")
-            logger.info(f"  Zeitraum (1h-Kerzen): {start_date.strftime('%Y-%m-%d')} bis {end_date.strftime('%Y-%m-%d')}")
+            logger.info(f"  Zeitraum ({timeframe}-Kerzen): {start_date.strftime('%Y-%m-%d')} bis {end_date.strftime('%Y-%m-%d')}")
             logger.info(f"  Start-Kapital: ${results['initial_balance']:,.2f}")
             logger.info(f"  End-Kapital: ${results['final_balance']:,.2f}")
             logger.info(f"  Total Return: {results['total_return']:+.2f}%")
@@ -258,7 +258,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='Comprehensive AI Training')
     parser.add_argument('--years', type=int, default=15, help='Jahre historische Daten (default: 15)')
-    parser.add_argument('--timeframe', type=str, default='1h', choices=['1h', '4h', '1d', '1w'], help='Timeframe (default: 1h)')
+    parser.add_argument('--timeframe', type=str, default='15m', choices=['15m', '1h', '4h', '1d', '1w'], help='Timeframe (default: 15m)')
     parser.add_argument('--no-news', action='store_true', help='News-Integration deaktivieren')
     parser.add_argument('--no-backtest', action='store_true', help='Backtest überspringen')
     parser.add_argument('--symbols', type=str, nargs='+', help='Spezifische Symbole (z.B. BTC/USD ETH/USD)')

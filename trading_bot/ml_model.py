@@ -350,7 +350,7 @@ class MLModel:
             for f in missing_features:
                 df[f] = 0
         
-        return df[available_features].copy()
+        return df[feature_names].copy()
     
     def _prepare_features(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
         """

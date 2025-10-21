@@ -41,8 +41,8 @@ class HistoricalTrainer:
         symbols: List[str],
         years: int = 15,
         timeframe: str = '1d',
-        forward_window: int = 10,
-        profit_threshold: float = 0.01,
+        forward_window: int = 8,      # Verkürzt für schnellere Signale
+        profit_threshold: float = 0.005,  # Gesenkt für mehr Gelegenheiten (0.5%)
         use_news: bool = False
     ) -> Dict:
         """
@@ -374,7 +374,7 @@ class HistoricalTrainer:
                 
                 # Trailing Stop-Loss Logik: Passe den Stop-Loss nach oben an
                 atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
-                new_stop_loss = highest_price_since_entry - (atr_val * 2.0) # Etwas mehr Puffer für den Trail
+                new_stop_loss = highest_price_since_entry - (atr_val * 1.8) # Engerer Trailing Stop für schnellere Exits
                 stop_loss_price = max(stop_loss_price, new_stop_loss)
 
                 # Stop-Loss prüfen
@@ -395,7 +395,7 @@ class HistoricalTrainer:
                 
                 # Trailing Stop-Loss Logik: Passe den Stop-Loss nach unten an
                 atr_val = df_indicators['atr'].iloc[i] if 'atr' in df_indicators.columns else current_price * 0.02
-                new_stop_loss = lowest_price_since_entry + (atr_val * 2.0)
+                new_stop_loss = lowest_price_since_entry + (atr_val * 1.8) # Engerer Trailing Stop
                 stop_loss_price = min(stop_loss_price, new_stop_loss)
                 
                 # Stop-Loss prüfen (Preis steigt über SL)

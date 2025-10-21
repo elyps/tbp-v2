@@ -410,7 +410,7 @@ class HistoricalTrainer:
                     continue
 
             # --- Entry-Logik (Kaufen) ---
-            if signal == 1 and position == 0 and confidence > 0.52:  # Konfidenzschwelle weiter gesenkt für deutlich mehr Trades
+            if signal == 1 and position == 0 and confidence > 0.50:  # Maximale Aggressivität für höchste Trade-Frequenz
                 # Kaufe Position
                 amount = (balance * 0.75) / current_price  # Erhöhter Kapitaleinsatz (75%)
                 position = amount
@@ -425,7 +425,7 @@ class HistoricalTrainer:
                 logger.info(f"  -> KAUF bei ${current_price:.2f}, Initial-SL: ${stop_loss_price:.2f}")
             
             # --- Entry-Logik (Shorten) ---
-            elif signal == -1 and position == 0 and confidence > 0.52: # Gleiche Schwelle für Short
+            elif signal == -1 and position == 0 and confidence > 0.50: # Maximale Aggressivität für höchste Trade-Frequenz
                 # Verkaufe (short) Position
                 amount = (balance * 0.75) / current_price
                 position = -amount # Negative Position für Short

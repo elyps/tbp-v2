@@ -245,119 +245,111 @@ class MLModel:
                 'probability_sell': 0.33,
                 'probability_hold': 0.34
             }
+            
+    def _get_feature_names(self) -> List[str]:
+        """Gibt eine Liste aller Feature-Namen zurück, die vom Modell verwendet werden."""
+        return [
+            # Basis-Indikatoren
+            'sma_20', 'sma_50', 'ema_9', 'ema_21', 'rsi_14', 'macd_line', 
+            'macd_signal', 'macd_hist', 'momentum', 'stoch_k', 'stoch_d', 
+            'bb_upper', 'bb_middle', 'bb_lower', 'atr', 'adx', 'plus_di', 
+            'minus_di', 'volume', 'obv',
+            # Abgeleitete Features
+            'price_sma20_ratio', 'price_distance_sma20', 'price_sma50_ratio',
+            'bb_position', 'bb_width', 'sma20_sma50_ratio', 'trend_alignment',
+            'rsi_normalized', 'rsi_oversold', 'rsi_overbought', 'volume_ratio',
+            'volume_trend', 'obv_trend', 'trend_strong', 'trend_weak',
+            'stoch_signal', 'macd_positive', 'macd_momentum'
+        ]
+
+    def _create_features_from_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Erstellt alle abgeleiteten Features aus dem Indikatoren-DataFrame.
+        Diese Methode ist für die Batch-Verarbeitung (Training) optimiert.
+        """
+        features_df = df.copy()
+        
+        # Preis-Ratios
+        features_df['price_sma20_ratio'] = features_df['close'] / features_df['sma_20']
+        features_df['price_distance_sma20'] = (features_df['close'] - features_df['sma_20']) / features_df['sma_20']
+        features_df['price_sma50_ratio'] = features_df['close'] / features_df['sma_50']
+        
+        # Bollinger Band Position & Width
+        bb_range = features_df['bb_upper'] - features_df['bb_lower']
+        features_df['bb_position'] = (features_df['close'] - features_df['bb_lower']) / bb_range
+        features_df['bb_width'] = bb_range / features_df['bb_middle']
+        
+        # Trend-Features
+        features_df['sma20_sma50_ratio'] = features_df['sma_20'] / features_df['sma_50']
+        features_df['trend_alignment'] = np.where(features_df['sma_20'] > features_df['sma_50'], 1, -1)
+        
+        # Momentum-Features
+        features_df['rsi_normalized'] = (features_df['rsi_14'] - 50) / 50
+        features_df['rsi_oversold'] = np.where(features_df['rsi_14'] < 30, 1, 0)
+        features_df['rsi_overbought'] = np.where(features_df['rsi_14'] > 70, 1, 0)
+        
+        # Volumen-Features
+        avg_vol = features_df['volume'].rolling(window=20).mean()
+        features_df['volume_ratio'] = features_df['volume'] / avg_vol
+        features_df['volume_trend'] = features_df['volume'].pct_change(5)
+        features_df['obv_trend'] = features_df['obv'].pct_change(5)
+        
+        # ADX Trend-Stärke
+        features_df['trend_strong'] = np.where(features_df['adx'] > 25, 1, 0)
+        features_df['trend_weak'] = np.where(features_df['adx'] < 20, 1, 0)
+        
+        # Stochastic Momentum
+        features_df['stoch_signal'] = np.where(features_df['stoch_k'] > features_df['stoch_d'], 1, -1)
+        
+        # MACD Signal
+        features_df['macd_positive'] = np.where(features_df['macd_hist'] > 0, 1, 0)
+        features_df['macd_momentum'] = features_df['macd_hist'].rolling(window=3).mean()
+        
+        # Ersetze unendliche Werte und fülle NaNs, die durch Berechnungen entstanden sind
+        features_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        features_df.fillna(0, inplace=True)
+        
+        return features_df
+
+    def _select_features_from_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Wählt die für das Modell definierten Feature-Spalten aus einem DataFrame aus."""
+        feature_names = self._get_feature_names()
+        
+        # Stelle sicher, dass alle Feature-Spalten im DataFrame existieren
+        available_features = [f for f in feature_names if f in df.columns]
+        missing_features = [f for f in feature_names if f not in df.columns]
+        
+        if missing_features:
+            logger.warning(f"Fehlende Feature-Spalten: {missing_features}. Werden mit 0 gefüllt.")
+            for f in missing_features:
+                df[f] = 0
+        
+        return df[available_features].copy()
     
     def _prepare_features(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
         """
         Bereitet Features für das Modell vor.
-        MUSS EXAKT die gleichen 38 Features wie beim Premium-Training erstellen!
+        Diese Methode ist für eine einzelne Vorhersage (letzte Zeile des df) optimiert.
         
         Args:
             df: DataFrame mit Marktdaten und Indikatoren
             
         Returns:
-            DataFrame mit ausgewählten Features
+            DataFrame mit einer Zeile der ausgewählten Features
         """
         try:
-            # Basis-Features (ALLE 20 wie im Premium-Training)
-            base_features = [
-                # Moving Averages
-                'sma_20', 'sma_50', 'ema_9', 'ema_21',
-                # Momentum
-                'rsi_14', 'macd_line', 'macd_signal', 'macd_hist', 'momentum',
-                'stoch_k', 'stoch_d',
-                # Volatilität
-                'bb_upper', 'bb_middle', 'bb_lower', 'atr',
-                # Trend
-                'adx', 'plus_di', 'minus_di',
-                # Volumen
-                'volume', 'obv'
-            ]
+            # Erstelle alle Features für den gesamten DataFrame
+            all_features = self._create_features_from_indicators(df)
             
-            # Erstelle DataFrame mit letzter Zeile
-            features_df = pd.DataFrame(index=[0])
+            # Wähle die relevanten Feature-Spalten aus
+            selected_features = self._select_features_from_df(all_features)
             
-            # Füge verfügbare Basis-Features hinzu
-            for col in base_features:
-                if col in df.columns:
-                    features_df[col] = df[col].tail(1).values[0]
+            # Gib nur die letzte Zeile zurück, da diese für die Live-Vorhersage ist
+            last_row = selected_features.iloc[[-1]]
             
-            # Abgeleitete Features (EXAKT wie im Training!)
-            if 'close' in df.columns:
-                close_val = df['close'].tail(1).values[0]
-                
-                # Preis-Ratios
-                if 'sma_20' in df.columns:
-                    sma20 = df['sma_20'].tail(1).values[0]
-                    features_df['price_sma20_ratio'] = close_val / sma20 if sma20 > 0 else 1.0
-                    features_df['price_distance_sma20'] = (close_val - sma20) / sma20 if sma20 > 0 else 0.0
-                
-                if 'sma_50' in df.columns:
-                    sma50 = df['sma_50'].tail(1).values[0]
-                    features_df['price_sma50_ratio'] = close_val / sma50 if sma50 > 0 else 1.0
-                
-                # Bollinger Band Position & Width
-                if all(col in df.columns for col in ['bb_lower', 'bb_upper', 'bb_middle']):
-                    bb_lower = df['bb_lower'].tail(1).values[0]
-                    bb_upper = df['bb_upper'].tail(1).values[0]
-                    bb_middle = df['bb_middle'].tail(1).values[0]
-                    bb_range = bb_upper - bb_lower
-                    if bb_range > 0:
-                        features_df['bb_position'] = (close_val - bb_lower) / bb_range
-                        features_df['bb_width'] = bb_range / bb_middle if bb_middle > 0 else 0.0
-                    else:
-                        features_df['bb_position'] = 0.5
-                        features_df['bb_width'] = 0.0
+            logger.debug(f"Features für Vorhersage vorbereitet: {len(last_row.columns)} Features")
             
-            # Trend-Features
-            if 'sma_20' in df.columns and 'sma_50' in df.columns:
-                sma20 = df['sma_20'].tail(1).values[0]
-                sma50 = df['sma_50'].tail(1).values[0]
-                features_df['sma20_sma50_ratio'] = sma20 / sma50 if sma50 > 0 else 1.0
-                features_df['trend_alignment'] = 1 if sma20 > sma50 else -1
-            
-            # Momentum-Features
-            if 'rsi_14' in df.columns:
-                rsi = df['rsi_14'].tail(1).values[0]
-                features_df['rsi_normalized'] = (rsi - 50) / 50
-                features_df['rsi_oversold'] = 1 if rsi < 30 else 0
-                features_df['rsi_overbought'] = 1 if rsi > 70 else 0
-            
-            # Volumen-Features
-            if 'volume' in df.columns:
-                vol = df['volume'].tail(1).values[0]
-                avg_vol = df['volume'].tail(20).mean()
-                features_df['volume_ratio'] = vol / avg_vol if avg_vol > 0 else 1.0
-                features_df['volume_trend'] = df['volume'].pct_change(5, fill_method=None).tail(1).values[0] if len(df) >= 6 else 0.0
-            
-            if 'obv' in df.columns:
-                features_df['obv_trend'] = df['obv'].pct_change(5, fill_method=None).tail(1).values[0] if len(df) >= 6 else 0.0
-            
-            # ADX Trend-Stärke
-            if 'adx' in df.columns:
-                adx_val = df['adx'].tail(1).values[0]
-                features_df['trend_strong'] = 1 if adx_val > 25 else 0
-                features_df['trend_weak'] = 1 if adx_val < 20 else 0
-            
-            # Stochastic Momentum
-            if 'stoch_k' in df.columns and 'stoch_d' in df.columns:
-                stoch_k = df['stoch_k'].tail(1).values[0]
-                stoch_d = df['stoch_d'].tail(1).values[0]
-                features_df['stoch_signal'] = 1 if stoch_k > stoch_d else -1
-            
-            # MACD Signal
-            if 'macd_hist' in df.columns:
-                macd_hist = df['macd_hist'].tail(1).values[0]
-                features_df['macd_positive'] = 1 if macd_hist > 0 else 0
-                features_df['macd_momentum'] = df['macd_hist'].tail(3).mean() if len(df) >= 3 else 0.0
-            
-            # NaN-Werte füllen und Datentypen für zukünftige Pandas-Versionen korrekt behandeln
-            # Zuerst alle Spalten in numerische Werte umwandeln, Fehler als NaN belassen
-            features_df = features_df.apply(pd.to_numeric, errors='coerce')
-            features_df = features_df.fillna(0)
-            
-            logger.debug(f"Features vorbereitet: {len(features_df.columns)} Features")
-            
-            return features_df
+            return last_row
             
         except Exception as e:
             logger.error(f"Fehler bei der Feature-Vorbereitung: {str(e)}")

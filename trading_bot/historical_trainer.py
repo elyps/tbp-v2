@@ -256,19 +256,14 @@ class HistoricalTrainer:
         Returns:
             DataFrame mit Features, bereit für das Training.
         """
-        # Nutze die _prepare_features Methode des ML-Modells, die für einen
-        # einzelnen Vorhersageschritt konzipiert ist, aber wende sie auf den
-        # gesamten DataFrame an, um die Features für das Training zu erhalten.
-        # Dies ist viel effizienter als eine Schleife.
+        # 1. Erstelle alle abgeleiteten Features in einem Rutsch (vektorisiert)
+        all_features_df = self.ml_model._create_features_from_indicators(df)
         
-        # Wir übergeben den gesamten DataFrame. _prepare_features sollte die
-        # letzte Zeile für die Feature-Generierung verwenden.
-        # Für das Training wollen wir aber Features für JEDE Zeile.
-        # Die einfachste und korrekte Methode ist, die Features direkt aus dem
-        # Indikatoren-DataFrame zu extrahieren.
-        features_df = self.ml_model._select_features_from_df(df)
+        # 2. Wähle die finalen Feature-Spalten aus, die das Modell erwartet
+        features_df = self.ml_model._select_features_from_df(all_features_df)
         
         # Entferne Zeilen mit NaN-Werten, die durch Indikatoren-Berechnungen entstehen
+        # Dies entfernt die ersten N Zeilen, für die Indikatoren wie SMA50 noch nicht berechnet werden können
         features_df.dropna(inplace=True)
         
         return features_df

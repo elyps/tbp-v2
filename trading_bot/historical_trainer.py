@@ -189,39 +189,53 @@ class HistoricalTrainer:
         Returns:
             Liste von Labels (0=Verkauf, 1=Halten, 2=Kauf)
         """
+        logger.info(f"Generiere risikobewusste Labels (Window: {forward_window}, R/R: 1.5)...")
         labels = []
         close_prices = df['close'].values
+        high_prices = df['high'].values
+        low_prices = df['low'].values
+        atr_values = df['atr'].values if 'atr' in df.columns else [p * 0.02 for p in close_prices]
+        
+        risk_reward_ratio = 1.5
         
         for i in range(len(df) - forward_window):
             current_price = close_prices[i]
-            future_prices = close_prices[i+1:i+forward_window+1]
+            atr = atr_values[i]
             
-            if len(future_prices) == 0:
-                labels.append(1)  # Neutral
-                continue
+            # Definiere Stop-Loss und Take-Profit für diesen Punkt
+            stop_loss_price = current_price - (atr * 2.0)
+            take_profit_price = current_price + (atr * 2.0 * risk_reward_ratio)
             
-            # Maximaler zukünftiger Preis
-            max_future_price = max(future_prices)
-            min_future_price = min(future_prices)
+            # Prüfe die zukünftigen Kerzen
+            future_lows = low_prices[i+1 : i+1+forward_window]
+            future_highs = high_prices[i+1 : i+1+forward_window]
             
-            # Berechne Potential
-            upside_potential = (max_future_price - current_price) / current_price
-            downside_risk = (current_price - min_future_price) / current_price
+            sl_hit = False
+            tp_hit = False
             
-            # Label-Logik
-            if upside_potential > profit_threshold and upside_potential > downside_risk * 1.5:
-                # Starkes Aufwärtspotential -> Kaufen
+            # Finde heraus, was zuerst getroffen wird
+            for j in range(len(future_lows)):
+                if future_lows[j] <= stop_loss_price:
+                    sl_hit = True
+                    break # Stop-Loss wurde getroffen
+                if future_highs[j] >= take_profit_price:
+                    tp_hit = True
+                    break # Take-Profit wurde getroffen
+            
+            if tp_hit and not sl_hit:
+                # Take-Profit wurde erreicht, bevor Stop-Loss -> Guter Kauf
                 labels.append(2)
-            elif downside_risk > profit_threshold and downside_risk > upside_potential * 1.5:
-                # Starkes Abwärtsrisiko -> Verkaufen/Short
+            elif sl_hit and not tp_hit:
+                # Stop-Loss wurde erreicht, bevor Take-Profit -> Schlechter Kauf
                 labels.append(0)
             else:
-                # Unsicher -> Halten
+                # Keines von beiden wurde im Fenster erreicht -> Halten
                 labels.append(1)
         
-        # Fülle letzte Werte mit Neutral auf
+        # Fülle die restlichen Labels auf, für die wir keine Zukunft haben
         while len(labels) < len(df):
-            labels.append(1)
+            labels.append(1) # Neutral
+                continue
         
         return labels
     
